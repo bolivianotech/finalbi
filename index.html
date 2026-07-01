@@ -145,7 +145,7 @@ input[type=text]:focus,input[type=email]:focus,input[type=number]:focus,input[ty
       <h2 class="font-bold text-gray-800 mb-3">Declaracion de Integridad Academica</h2>
       <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-xs text-blue-800 leading-relaxed">
         <p class="font-bold mb-1">Valoracion 2 — Inteligencia de Negocios</p>
-        <p>Esta es la <strong>Primera Evaluacion Parcial</strong> de la materia Ingenieria de Software II, correspondiente a los Bloques III-VII: Pipeline KDD con PySpark, RFM, K-Means, Dashboard Interactivo y Data Storytelling. <strong>Tu honestidad academica</strong> es fundamental para la validez de esta evaluacion.</p>
+        <p>Este es el <strong>Examen Final</strong> de la materia Inteligencia de Negocios, correspondiente a los Bloques III-VII: Pipeline KDD con PySpark, RFM, K-Means, Dashboard Interactivo y Data Storytelling. <strong>Tu honestidad academica</strong> es fundamental para la validez de esta evaluacion.</p>
       </div>
       <label class="flex items-start gap-3 cursor-pointer group">
         <input id="inp-consent" type="checkbox" onchange="toggleConsent(this.checked)" onclick="checkIntake()"
@@ -254,10 +254,10 @@ input[type=text]:focus,input[type=email]:focus,input[type=number]:focus,input[ty
         <div>
           <p class="font-bold text-green-800 text-sm mb-2">Evaluacion entregada correctamente</p>
           <p class="text-xs text-green-700 leading-relaxed">
-            Tu Examen final de Inteligencia de Negocios ha sido completado. Descarga la retroalimentacion completa para revisar cada pregunta, tu respuesta y la justificacion de la respuesta correcta y por que las otras opciones son incorrectas.
+            Tu Examen Final de Inteligencia de Negocios ha sido completado. Descarga la retroalimentacion completa para revisar cada pregunta, tu respuesta y la justificacion de la respuesta correcta y por que las otras opciones son incorrectas.
           </p>
           <p class="text-xs text-green-600 font-semibold mt-2">
-            Guarda el PDF como material de estudio para el segundo parcial.
+            Guarda el PDF como material de estudio y retroalimentacion del Examen Final.
           </p>
         </div>
       </div>
@@ -1091,7 +1091,7 @@ function generateInsights(sections, answers) {
 
   scoreBySection.sort((a, b) => a.score - b.score);
   scoreBySection.slice(0, 2).forEach(item => {
-    insights.push({ level: 'high', topic: item.icon + ' ' + item.section, recommendation: 'Area de refuerzo prioritario. Revisar el material del bloque correspondiente y practicar con ejercicios adicionales antes del segundo parcial.' });
+    insights.push({ level: 'high', topic: item.icon + ' ' + item.section, recommendation: 'Area de refuerzo prioritario. Revisar el material del bloque correspondiente y practicar con ejercicios adicionales antes del proximo examen.' });
   });
   scoreBySection.slice(2, 4).forEach(item => {
     insights.push({ level: 'medium', topic: item.icon + ' ' + item.section, recommendation: 'Area de mejora. Se recomienda revisar los conceptos clave y reforzar con la bibliografia del curso.' });
@@ -1239,7 +1239,7 @@ function downloadPDF() {
   html += '.ft{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #E5E5EA;font-size:11px;color:#888}';
   html += '@media print{body{background:#fff;padding:8px}.w{box-shadow:none;padding:16px}}</style>';
   html += '</head><body onload="setTimeout(function(){window.print();},800);"><div class="w">';
-  html += '<div class="hd"><h1>Retroalimentacion &mdash; Examen final</h1><div class="sub">Inteligencia de Negocios &middot; UPDS 2026</div><div class="auth">M.Sc. Jimmy Nataniel Requena Llorentty</div></div>';
+  html += '<div class="hd"><h1>Retroalimentacion &mdash; Examen Final</h1><div class="sub">Inteligencia de Negocios &middot; UPDS 2026</div><div class="auth">M.Sc. Jimmy Nataniel Requena Llorentty</div></div>';
   html += '<div class="ig"><div class="ib"><b>Estudiante</b><span>'+state.student.nombre+'</span></div>';
   html += '<div class="ib"><b>Codigo</b><span>'+state.student.codigo+'</span></div>';
   html += '<div class="ib"><b>Correo</b><span>'+state.student.email+'</span></div>';
@@ -1266,7 +1266,7 @@ function downloadPDF() {
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'Retroalimentacion-PrimerParcial-' + state.student.codigo + '.html';
+  link.download = 'Retroalimentacion-ExamenFinal-' + state.student.codigo + '.html';
   link.click();
 }
 </script>
