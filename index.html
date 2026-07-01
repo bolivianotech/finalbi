@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Primer Parcial — Inteligencia de Negocios · UPDS 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { ios: { blue:'#007AFF', green:'#34C759', red:'#FF3B30', orange:'#FF9500',
+                     purple:'#AF52DE', teal:'#5AC8FA', bg:'#F2F2F7', sep:'#E5E5EA', second:'#6C6C70' } },
+    fontFamily: { sans:['-apple-system','BlinkMacSystemFont','Segoe UI','system-ui','sans-serif'] }
+  }}
+}
+</script>
+<style>
+*{-webkit-tap-highlight-color:transparent}
+body{-webkit-font-smoothing:antialiased;background:#F2F2F7}
+.card{background:#fff;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.07),0 0 1px rgba(0,0,0,.06)}
+.opt{border:2px solid #E5E5EA;border-radius:13px;transition:all .16s ease;cursor:pointer;user-select:none}
+.opt:hover{border-color:#C6C6C8;background:#FAFAFA}
+.opt.sel{border-color:#007AFF;background:#EBF5FF}
+.opt.ok{border-color:#34C759!important;background:#E8F8EE!important}
+.opt.fail{border-color:#FF3B30!important;background:#FFF0EE!important}
+.opt.missed{border-color:#FF9500!important;background:#FFF5E6!important}
+.opt:active{transform:scale(.98)}
+.tf{border:2px solid #E5E5EA;border-radius:13px;cursor:pointer;transition:all .16s ease;user-select:none;padding:12px;text-align:center;font-weight:600}
+.tf.sel-true{border-color:#34C759;background:#E8F8EE;color:#1A7A34}
+.tf.sel-false{border-color:#FF3B30;background:#FFF0EE;color:#C0392B}
+.tf.ok{border-color:#34C759;background:#E8F8EE}
+.tf.fail{border-color:#FF3B30;background:#FFF0EE}
+.tf:active{transform:scale(.98)}
+.chip{cursor:pointer;user-select:none;border:2px solid #007AFF;color:#007AFF;background:#EBF5FF;border-radius:10px;padding:5px 14px;font-weight:600;font-size:.875rem;transition:all .15s ease;display:inline-block}
+.chip:hover{background:#D6EBFF}
+.chip.active{background:#007AFF;color:#fff;transform:scale(1.05);box-shadow:0 4px 12px rgba(0,122,255,.3)}
+.chip.used{opacity:.3;pointer-events:none}
+.blank{display:inline-flex;align-items:center;justify-content:center;min-width:148px;height:36px;border:2px dashed #C6C6C8;border-radius:10px;background:#F9F9FB;color:#6C6C70;font-size:.875rem;font-weight:600;cursor:pointer;vertical-align:middle;margin:0 3px;transition:all .15s ease}
+.blank:hover{border-color:#007AFF;background:#EBF5FF;color:#007AFF}
+.blank.ready{border-color:#007AFF;background:#EBF5FF;color:#0055CC;border-style:solid}
+.blank.ok{border-color:#34C759;background:#E8F8EE;color:#1A7A34;border-style:solid}
+.blank.fail{border-color:#FF3B30;background:#FFF0EE;color:#C0392B;border-style:solid}
+.stab{border-radius:10px;padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s ease;border:2px solid transparent;white-space:nowrap}
+.stab.active{color:#fff}
+.progress-track{background:#E5E5EA;border-radius:99px;height:6px}
+.progress-fill{background:#007AFF;border-radius:99px;height:6px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.section-in{animation:sIn .3s ease}
+@keyframes sIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.score-ring{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.cb-box{width:20px;height:20px;border:2px solid #C6C6C8;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
+.cb-box.checked{background:#007AFF;border-color:#007AFF}
+.cb-box.ok-check{background:#34C759;border-color:#34C759}
+.cb-box.fail-check{background:#FF3B30;border-color:#FF3B30}
+.cb-box.missed-check{background:#FF9500;border-color:#FF9500}
+input[type=text],input[type=email],input[type=number],input[type=datetime-local]{outline:none;transition:border-color .15s ease}
+input[type=text]:focus,input[type=email]:focus,input[type=number]:focus,input[type=datetime-local]:focus{border-color:#007AFF}
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.insight-card{border-radius:10px;padding:12px;font-size:.85rem;line-height:1.5;border-left:4px solid;background:#f9f9fb}
+.insight-card.high{border-left-color:#FF3B30;background:#FFF0EE}
+.insight-card.high .ic-title{color:#C0392B;font-weight:700}
+.insight-card.high .ic-text{color:#6D2826;font-size:.8rem}
+.insight-card.medium{border-left-color:#FF9500;background:#FFF5E6}
+.insight-card.medium .ic-title{color:#C67000;font-weight:700}
+.insight-card.medium .ic-text{color:#6B3F00;font-size:.8rem}
+.insight-card.low{border-left-color:#34C759;background:#E8F8EE}
+.insight-card.low .ic-title{color:#1A7A34;font-weight:700}
+.insight-card.low .ic-text{color:#0D5722;font-size:.8rem}
+@media print{
+  body{background:#fff!important}
+  #app-shell,#intake-screen,#results-overlay,header,.sticky,.fixed,#bottom-nav{display:none!important}
+  #print-report{display:block!important}
+  .pr-section{page-break-before:auto}
+  .pr-q{page-break-inside:avoid;border:1px solid #e5e5ea;border-radius:10px;padding:12px;margin-bottom:10px}
+  .pr-opt{padding:5px 10px;border-radius:6px;margin-bottom:4px;font-size:.85rem}
+  .pr-ok{background:#E8F8EE;color:#1A7A34}
+  .pr-fail{background:#FFF0EE;color:#C0392B}
+  .pr-missed{background:#FFF5E6;color:#c07000}
+  .pr-neutral{color:#555}
+  .pr-just{background:#F5F5F5;border-radius:8px;padding:8px;font-size:.82rem;color:#444;margin-top:8px}
+}
+#print-report{display:none}
+</style>
+</head>
+<body class="min-h-screen">
+
+<div id="intake-screen" class="min-h-screen flex items-start justify-center py-10 px-4">
+  <div style="max-width:540px;width:100%">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-ios-blue mb-3 shadow-lg shadow-blue-200">
+        <span class="text-3xl">📐</span>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Primer Parcial</h1>
+      <p class="text-ios-second text-sm mt-1">Inteligencia de Negocios · UPDS 2026</p>
+    </div>
+
+    <div class="card p-5 mb-4">
+      <div class="grid grid-cols-3 gap-3 text-center">
+        <div class="bg-blue-50 rounded-xl p-3">
+          <p class="text-xl font-bold text-ios-blue">30</p>
+          <p class="text-xs text-ios-second mt-0.5">preguntas</p>
+        </div>
+        <div class="bg-orange-50 rounded-xl p-3">
+          <p class="text-xl font-bold text-orange-500">60</p>
+          <p class="text-xs text-ios-second mt-0.5">minutos</p>
+        </div>
+        <div class="bg-green-50 rounded-xl p-3">
+          <p class="text-xl font-bold text-ios-green">6</p>
+          <p class="text-xs text-ios-second mt-0.5">secciones</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 mb-4">
+      <h2 class="font-bold text-gray-800 mb-4">Datos del estudiante</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-ios-second uppercase tracking-wide block mb-1">Nombre completo *</label>
+          <input id="inp-nombre" type="text" placeholder="Ej. Ana Sofia Torres Vidal"
+            class="w-full border-2 border-ios-sep rounded-xl px-4 py-3 text-sm text-gray-800"
+            oninput="checkIntake()" onchange="checkIntake()"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-ios-second uppercase tracking-wide block mb-1">Codigo de estudiante *</label>
+          <input id="inp-codigo" type="text" placeholder="Ej. 2023-SIS-0042"
+            class="w-full border-2 border-ios-sep rounded-xl px-4 py-3 text-sm text-gray-800"
+            oninput="checkIntake()" onchange="checkIntake()"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-ios-second uppercase tracking-wide block mb-1">Correo institucional *</label>
+          <input id="inp-email" type="email" placeholder="codigo@upds.edu.bo"
+            class="w-full border-2 border-ios-sep rounded-xl px-4 py-3 text-sm text-gray-800"
+            oninput="checkIntake()" onchange="checkIntake()"/>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-ios-second uppercase tracking-wide block mb-1">Fecha y hora de inicio</label>
+          <input id="inp-fecha" type="datetime-local"
+            class="w-full border-2 border-ios-sep rounded-xl px-4 py-3 text-sm text-gray-800 bg-white cursor-text"
+            oninput="checkIntake()" onchange="checkIntake()"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 mb-5">
+      <h2 class="font-bold text-gray-800 mb-3">Declaracion de Integridad Academica</h2>
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-xs text-blue-800 leading-relaxed">
+        <p class="font-bold mb-1">Valoracion 2 — Inteligencia de Negocios</p>
+        <p>Esta es la <strong>Primera Evaluacion Parcial</strong> de la materia Ingenieria de Software II, correspondiente a los Bloques III-VII: Pipeline KDD con PySpark, RFM, K-Means, Dashboard Interactivo y Data Storytelling. <strong>Tu honestidad academica</strong> es fundamental para la validez de esta evaluacion.</p>
+      </div>
+      <label class="flex items-start gap-3 cursor-pointer group">
+        <input id="inp-consent" type="checkbox" onchange="toggleConsent(this.checked)" onclick="checkIntake()"
+          class="mt-0.5 w-5 h-5 flex-shrink-0 cursor-pointer"
+          style="accent-color:#007AFF"/>
+        <p class="text-sm text-gray-700 leading-relaxed">
+          Declaro bajo mi honor que las respuestas que proporcione en esta evaluacion son <strong>completamente propias</strong>, basadas exclusivamente en mis conocimientos. Entiendo que el fraude academico tiene consecuencias disciplinarias segun el reglamento de la UPDS.
+        </p>
+      </label>
+    </div>
+
+    <button id="btn-start" onclick="startExam()" disabled
+      class="w-full py-4 rounded-2xl font-bold text-base bg-gray-200 text-gray-400 transition-all cursor-not-allowed">
+      Completar todos los campos para continuar
+    </button>
+
+    <p class="text-center text-xs text-ios-second mt-4 pb-6">
+      M.Sc. Jimmy Nataniel Requena Llorentty · Inteligencia de Negocios · UPDS 2026
+    </p>
+  </div>
+</div>
+
+<div id="app-shell" style="display:none">
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-ios-sep">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <p class="text-xs text-ios-second font-medium" id="hd-student">—</p>
+        <h1 class="text-sm font-bold text-gray-900 truncate">Valoracion 2 — Inteligencia de Negocios</h1>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="text-xs text-ios-second">Tiempo</p>
+        <p id="timer" class="text-lg font-bold text-gray-800 tabular-nums">60:00</p>
+      </div>
+    </div>
+    <div class="max-w-2xl mx-auto px-4 pb-3">
+      <div class="flex justify-between text-xs text-ios-second mb-1">
+        <span id="prog-label">Seccion 1 de 6</span>
+        <span id="prog-pct">0 / 30</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progress-bar" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <div class="sticky top-[92px] z-40 bg-ios-bg/95 backdrop-blur-sm py-2 border-b border-ios-sep">
+    <div class="max-w-2xl mx-auto px-3 flex gap-2 overflow-x-auto pb-0.5" style="scrollbar-width:none">
+      <button class="stab" id="tab-0" onclick="goSection(0)">— 1</button>
+      <button class="stab" id="tab-1" onclick="goSection(1)">— 2</button>
+      <button class="stab" id="tab-2" onclick="goSection(2)">— 3</button>
+      <button class="stab" id="tab-3" onclick="goSection(3)">— 4</button>
+      <button class="stab" id="tab-4" onclick="goSection(4)">— 5</button>
+      <button class="stab" id="tab-5" onclick="goSection(5)">— 6</button>
+    </div>
+  </div>
+
+  <main class="max-w-2xl mx-auto px-4 py-5 pb-32" id="main-content"></main>
+
+  <div id="bottom-nav" class="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-ios-sep z-50">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex gap-3">
+      <button id="btn-prev" onclick="prevSection()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border-2 border-ios-sep text-ios-second hover:bg-gray-50 transition-all">← Anterior</button>
+      <button id="btn-next" onclick="nextSection()" class="flex-1 py-3 rounded-2xl font-semibold text-sm bg-ios-blue text-white hover:bg-blue-600 transition-all active:scale-95 shadow-md shadow-blue-200">Siguiente →</button>
+      <button id="btn-submit" onclick="confirmSubmit()" style="display:none" class="flex-1 py-3 rounded-2xl font-semibold text-sm bg-ios-green text-white hover:bg-green-600 transition-all active:scale-95 shadow-md shadow-green-200">Entregar Examen</button>
+    </div>
+  </div>
+</div>
+
+<div id="results-overlay" style="display:none" class="fixed inset-0 z-[100] bg-ios-bg overflow-y-auto">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+
+    <div class="card p-7 text-center mb-4">
+      <p class="text-xs font-semibold tracking-widest text-ios-second uppercase mb-3">Resultado Final</p>
+      <div class="score-ring w-36 h-36 rounded-full mx-auto mb-4 flex flex-col items-center justify-center border-8" id="score-ring">
+        <span class="text-4xl font-bold" id="score-num">--</span>
+        <span class="text-sm text-ios-second">/30</span>
+      </div>
+      <p class="text-2xl font-bold mb-1" id="score-label">--</p>
+      <p class="text-ios-second text-sm mb-3" id="score-sub">--</p>
+      <div class="bg-gray-50 rounded-xl p-3 grid grid-cols-3 gap-2 text-sm">
+        <div><p class="text-xs text-ios-second">Estudiante</p><p class="font-semibold text-gray-800 truncate" id="res-nombre">--</p></div>
+        <div><p class="text-xs text-ios-second">Codigo</p><p class="font-semibold text-gray-800" id="res-codigo">--</p></div>
+        <div><p class="text-xs text-ios-second">Calificacion</p><p class="font-semibold" id="res-grade">--</p></div>
+      </div>
+    </div>
+
+    <div class="card p-5 mb-4">
+      <h2 class="font-bold text-gray-800 mb-3">Resultado por seccion</h2>
+      <div id="breakdown" class="space-y-3"></div>
+    </div>
+
+    <div class="card p-5 mb-4">
+      <h2 class="font-bold text-gray-800 mb-3">Analisis de Resultados por Tema</h2>
+      <p class="text-xs text-ios-second mb-4">Basado en tus respuestas, estas son las areas con mayor y menor dominio en esta evaluacion:</p>
+      <div id="insights-container" class="insights-grid"></div>
+      <div class="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+        <p class="font-semibold mb-1">Retroalimentacion completa disponible:</p>
+        <p>Descarga el PDF para ver cada pregunta con tu respuesta, la respuesta correcta y la justificacion detallada de todas las opciones.</p>
+      </div>
+    </div>
+
+    <button onclick="downloadPDF()" class="w-full py-4 rounded-2xl bg-ios-blue text-white font-bold text-sm mb-4 hover:bg-blue-600 transition-all active:scale-95 shadow-md shadow-blue-200">
+      Descargar Retroalimentacion Completa (PDF)
+    </button>
+
+    <div class="card p-5 border-2 border-green-300 bg-green-50 mb-4">
+      <div class="flex gap-3 items-start">
+        <span class="text-2xl flex-shrink-0">&#10003;</span>
+        <div>
+          <p class="font-bold text-green-800 text-sm mb-2">Evaluacion entregada correctamente</p>
+          <p class="text-xs text-green-700 leading-relaxed">
+            Tu Primer Parcial de Inteligencia de Negocios ha sido completado. Descarga la retroalimentacion completa para revisar cada pregunta, tu respuesta y la justificacion de la respuesta correcta y por que las otras opciones son incorrectas.
+          </p>
+          <p class="text-xs text-green-600 font-semibold mt-2">
+            Guarda el PDF como material de estudio para el segundo parcial.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-ios-second pb-4">
+      M.Sc. Jimmy Nataniel Requena Llorentty · Inteligencia de Negocios · UPDS 2026
+    </p>
+  </div>
+</div>
+
+<script>
+const SECTIONS = [
+
+{ id:0, title:'Pipeline KDD y Capas BSG en PySpark', icon:'⚙️', color:'blue', type:'multiple',
+  desc:'KDD 6 pasos · Capa Bronze · Capa Silver · Reglas de limpieza · Delta Lake · PySpark',
+  questions:[
+    { text:'En el pipeline implementado en Databricks, la regla R3 de la capa Silver filtra con: .filter(~F.col("InvoiceNo").startswith("C")). Un estudiante propone eliminar esta regla argumentando que las devoluciones son datos validos que deben incluirse en el analisis RFM para reflejar la realidad del negocio. ¿Cual es el argumento tecnico correcto para mantener R3?',
+      opts:[
+        'Las facturas con prefijo "C" son cancelaciones que generan Quantity negativa; incluirlas en el calculo de TotalAmount = Quantity × UnitPrice produce valores negativos que distorsionan la metrica monetaria del RFM y generan segmentos incorrectos porque M negativo no tiene interpretacion de negocio valida',
+        'Las facturas con prefijo "C" son transacciones de credito de alto valor que inflan artificialmente la metrica de Frecuencia; mantenerlas duplicaria el conteo de transacciones por cliente y colapsaria el algoritmo K-Means al crear clusters con centroides fuera del rango esperado',
+        'Las facturas con prefijo "C" son registros duplicados generados automaticamente por el sistema ERP cada vez que se procesa una venta exitosa; filtrarlas elimina la redundancia tecnica sin perder informacion de negocio relevante'
+      ],
+      correct:0,
+      just:'Las facturas con prefijo "C" son CANCELACIONES (devoluciones) que tienen Quantity negativa por definicion. Al calcular TotalAmount = Quantity × UnitPrice, se obtienen valores negativos que hacen que la metrica M (Monetary) de un cliente pueda resultar negativa si tuvo muchas devoluciones — lo cual carece de interpretacion de negocio valida en RFM (no existe un "cliente que genero menos que cero ingresos" en el contexto de segmentacion de valor). Ademas, el StandardScaler y K-Means no estan disenados para manejar esta bimodalidad negativa. Opcion B incorrecta: no son creditos de alto valor, son cancelaciones; y afectan M, no F. Opcion C incorrecta: no son duplicados tecnicos — son transacciones de tipo distinto (cancelacion vs. venta) con semantica de negocio opuesta.'
+    },
+    { text:'Al ejecutar el pipeline Silver en PySpark con .dropDuplicates(["InvoiceNo","StockCode","CustomerID"]), un estudiante detecta que el dataset pasa de 1,067,371 a 525,461 registros (perdida del 51%). El docente indica que esto es CORRECTO. ¿Cual es la razon tecnica precisa que justifica esta perdida masiva de registros?',
+      opts:[
+        'PySpark aplica dropDuplicates de forma aleatoria cuando el cluster tiene memoria insuficiente, eliminando la mitad de los registros por defecto para garantizar que el procesamiento no falle por falta de RAM en el nodo Standard_DS3_v2',
+        'El dataset Online Retail II contiene dos hojas de calculo (Sheet1: 2009-2010 y Sheet2: 2010-2011) con un periodo de solapamiento de 12 meses; la carga de ambas hojas genera registros duplicados exactos para todas las transacciones de 2010, que el dropDuplicates elimina correctamente',
+        'La funcion dropDuplicates en PySpark elimina por defecto el 50% del dataset cuando detecta que los datos provienen de un archivo Excel, aplicando muestreo estadistico para optimizar el rendimiento del cluster'
+      ],
+      correct:1,
+      just:'El dataset Online Retail II tiene exactamente DOS hojas: Sheet1 (transacciones 2009-2010) y Sheet2 (transacciones 2010-2011). Al cargar ambas hojas juntas, todas las transacciones del año 2010 aparecen DUPLICADAS — una vez en cada hoja. La combinacion [InvoiceNo, StockCode, CustomerID] identifica unicamente cada linea de factura, por lo que dropDuplicates elimina correctamente todos los registros que aparecen dos veces (los de 2010). La perdida del ~51% es exactamente coherente con que un año completo de datos (2010) esta duplicado. Opcion A completamente falsa — dropDuplicates no tiene comportamiento probabilistico ni depende de RAM disponible. Opcion C inventada — dropDuplicates no aplica muestreo; es una operacion determinista.'
+    },
+    { text:'En la capa Gold, el pipeline calcula la Recencia con: F.datediff(F.lit(ref_date), F.max("InvDate")).alias("R"). Un cliente tiene su ultima compra el 2011-11-30 y ref_date = 2011-12-10. Su valor R = 10. En el modelo RFM con K-Means, ¿un R=10 indica un cliente Champions o Lost, y por que el StandardScaler es OBLIGATORIO antes de aplicar K-Means a las features R, F, M?',
+      opts:[
+        'R=10 indica cliente Champions (compro recientemente). El StandardScaler es obligatorio porque R, F y M tienen escalas completamente distintas (R puede ser 1-700 dias, F 1-200 facturas, M 1-250,000 USD); sin escalar, K-Means minimiza distancias euclidianas dominadas por M y R en dias, ignorando F por completo, produciendo clusters que segmentan por monto en lugar de por comportamiento integral',
+        'R=10 indica cliente Lost (el valor bajo significa que lleva 10 meses sin comprar). El StandardScaler se aplica para reducir el numero de dimensiones del espacio de features de 3 a 1, convirtiendo RFM en una sola puntuacion compuesta que K-Means puede procesar en una dimension',
+        'R=10 indica cliente At Risk (recencia intermedia). El StandardScaler es opcional porque K-Means con k=4 ya normaliza internamente los centroides durante cada iteracion del algoritmo EM, ajustando automaticamente las diferencias de escala entre las tres metricas'
+      ],
+      correct:0,
+      just:'R=10 dias = cliente CHAMPIONS o muy activo (compro hace solo 10 dias = alta recencia en el sentido de "reciente"). En RFM, R bajo (pocos dias desde la ultima compra) = BUENO = cliente activo. El StandardScaler es OBLIGATORIO porque las tres metricas tienen ordenes de magnitud completamente distintos: R puede ir de 1 a 700+ dias, F de 1 a 200+ transacciones, M de 1 a 250,000+ USD. La distancia euclidiana que K-Means minimiza se calcularia como sqrt((deltaR)^2 + (deltaF)^2 + (deltaM)^2), donde los terminos de M dominarían completamente (un delta de $1,000 en M aplasta un delta de 10 en F o R). Sin escalar, los clusters resultantes segmentan principalmente por gasto monetario e ignoran recencia y frecuencia — el modelo pierde toda su capacidad discriminativa de comportamiento. Opcion B incorrecta: R=10 dias no son "10 meses"; ademas StandardScaler no reduce dimensiones (eso es PCA). Opcion C incorrecta: K-Means NO normaliza internamente — sus distancias son siempre en el espacio original de features.'
+    },
+    { text:'El Silhouette Score obtenido en la Actividad 3 fue 0.7904. Un estudiante afirma en la defensa que "un Silhouette Score de 0.7904 significa que el modelo clasifico correctamente el 79.04% de los clientes en su segmento". ¿Como rebatirias esta afirmacion con la definicion tecnica correcta?',
+      opts:[
+        'La afirmacion es correcta: el Silhouette Score es un porcentaje de clasificacion correcta y 0.7904 significa exactamente que el 79.04% de los 4,312 clientes fue asignado al cluster correcto, con el 20.96% restante clasificado en el cluster incorrecto por el algoritmo K-Means',
+        'La afirmacion es incorrecta: el Silhouette Score mide la cohesion interna vs. separacion externa de los clusters en una escala de -1 a +1. Un valor de 0.7904 significa que los puntos de cada cluster estan muy cerca entre si y muy lejos de los otros clusters — indica alta calidad de segmentacion, NO porcentaje de clasificacion correcta, que seria una metrica de clasificacion supervisada',
+        'La afirmacion es parcialmente correcta: el Silhouette Score va de 0 a 100% y 0.7904 significa que el modelo convergio despues del 79.04% de las iteraciones maximas definidas en el parametro maxIter del algoritmo K-Means de MLlib de PySpark'
+      ],
+      correct:1,
+      just:'El Silhouette Score (Rousseeuw, 1987) es una metrica de validacion de clustering NO supervisado que va de -1 a +1. Para cada punto i se calcula s(i) = (b(i) - a(i)) / max(a(i), b(i)), donde a(i) es la distancia media al resto de puntos de SU cluster (cohesion interna) y b(i) es la distancia media al cluster MAS CERCANO diferente (separacion externa). Un valor de 0.7904 significa que, en promedio, los puntos estan 79.04% mas cerca de sus compañeros de cluster que del siguiente cluster mas cercano — indica excelente separacion. NO ES un porcentaje de clasificacion correcta porque K-Means es no supervisado: no existe un "cluster correcto" de referencia. La clasificacion supervisada usaria metricas como Accuracy, F1-score o AUC-ROC. Opciones A y C confunden conceptos de evaluacion supervisada con no supervisada.'
+    },
+    { text:'En Databricks Community Edition, al configurar el cluster para la Actividad 3, ¿por que es CRITICO configurar Autotermination en 30 minutos y cual es la consecuencia practica de no haberlo configurado correctamente?',
+      opts:[
+        'El Autotermination en 30 min es un requisito de seguridad de Databricks que desconecta automaticamente al usuario despues de 30 min de inactividad para proteger los datos del notebook contra accesos no autorizados de otros usuarios del workspace compartido',
+        'Databricks Community Edition tiene un limite de horas de computo gratuitas por mes; sin Autotermination, el cluster continua corriendo aunque el notebook no se use, consumiendo las horas disponibles hasta agotar la cuota mensual y dejando al equipo sin capacidad de computo para terminar la actividad',
+        'El cluster en Databricks Community requiere exactamente 30 min para inicializar todos los servicios de Spark y configurar el Delta Lake; sin este parametro, el cluster arranca en modo de prueba con solo el 10% de la capacidad de procesamiento disponible'
+      ],
+      correct:1,
+      just:'Databricks Community Edition es GRATUITO pero tiene un limite de horas de computo disponibles (tipicamente en torno a las DBU disponibles por mes). El cluster consume horas independientemente de si el notebook esta activamente ejecutando codigo — basta con que el cluster este "Running". Sin Autotermination, el cluster puede quedarse encendido toda la noche o el fin de semana, agotando la cuota mensual completa en pocos dias. La consecuencia practica es que el equipo pierde acceso al computo justo antes de la entrega o la defensa. El Autotermination de 30 min asegura que el cluster se apague automaticamente despues de 30 minutos sin actividad, conservando la cuota disponible para cuando realmente se necesita. Opciones A y C son falsas: A confunde con gestion de sesiones de usuario; C inventa el comportamiento de inicializacion del cluster.'
+    }
+  ]
+},
+
+{ id:1, title:'RFM, K-Means y Segmentos de Clientes', icon:'🎯', color:'purple', type:'multiselect',
+  desc:'Metricas RFM · Segmentos Champions/Loyal/At Risk/Lost · Pareto 80/20 · Estrategias · K-Means — selecciona las que correspondan',
+  questions:[
+    { text:'¿Cuales afirmaciones sobre el calculo de Recencia (R) en el pipeline Gold son TECNICAMENTE CORRECTAS? Selecciona las 3 que correspondan.',
+      opts:[
+        'R se calcula como F.datediff(F.lit(ref_date), F.max("InvDate")) donde ref_date = max_date + 1 dia; un valor R BAJO indica que el cliente compro recientemente y es por tanto mas valioso en la dimension de recencia',
+        'La razon de usar max_date + 1 dia (y no la fecha actual) como ref_date es garantizar reproducibilidad: el mismo notebook ejecutado en cualquier fecha futura producira exactamente el mismo valor R para cada cliente, haciendo el analisis auditable y comparable entre ejecuciones',
+        'Para el cliente con R=700 dias, la estrategia optima segun el modelo es enviarle el mismo tipo de comunicacion que al cliente Champions, ya que ambos pertenecen a la misma base de datos y merecen igual atencion comercial',
+        'La Recencia tiene mayor poder predictivo de recompra a corto plazo que la Frecuencia o el Monto, segun la literatura de Gutiérrez-Arranz y Sanchez-Franco (2005) citada en el curso'
+      ],
+      correct:[0,1,3],
+      just:'Afirmaciones correctas: R = datediff(ref_date, max(InvDate)) donde R bajo = compra reciente = valioso (correcto por definicion RFM). Usar max_date+1 garantiza reproducibilidad — si se usara datetime.now(), el mismo notebook corrido hoy y manana daria R distintos para el mismo cliente, haciendo el analisis no reproducible ni auditable (correcto). La Recencia como mejor predictor de recompra a corto plazo es citada explicitamente en el material (Gutiérrez-Arranz y Sanchez-Franco, 2005). Opcion C es FALSA y peligrosa: un cliente con R=700 dias es segmento LOST — enviarle el mismo trato que a Champions desperdicia presupuesto y puede generar ruido no deseado. La estrategia para Lost es "recuperacion bajo costo o dejar de invertir", opuesta a la de Champions (programa VIP, embajadores).'
+    },
+    { text:'Respecto al Insight Clave del material: "el 15-20% de clientes Champions genera el 60-70% de los ingresos". ¿Cuales afirmaciones son CORRECTAS sobre las implicaciones de negocio y tecnicas de este hallazgo? Selecciona las 3 que correspondan.',
+      opts:[
+        'Este patron se conoce como el principio de Pareto 80/20 adaptado al contexto de clientes; en la practica de la Actividad 3 con 4,312 clientes unicos, el segmento Champions de solo 10 clientes concentraria un porcentaje desproporcionado del revenue total',
+        'La implicacion estrategica directa es que perder UN cliente Champions impacta mas en el revenue que perder 50 clientes Lost; esto justifica economicamente invertir en programas VIP y descuentos exclusivos para el segmento Champions',
+        'En el scatter plot F vs M del dashboard, los clientes Champions aparecen visualmente en la esquina superior derecha (alta F y alto M) y con el color verde segun la paleta semantica definida en clase; identificar outliers en esa zona permite detectar los "super Champions" de la base',
+        'Dado que Champions genera la mayor parte del revenue, la estrategia recomendada para el segmento Lost es invertir el mismo presupuesto de marketing que en Champions para recuperarlos rapidamente y maximizar el retorno de la campaña de reactivacion'
+      ],
+      correct:[0,1,2],
+      just:'Afirmaciones correctas: el patron 15-20% genera 60-70% de ingresos es Pareto 80/20 aplicado a clientes, y con 4,312 clientes del dataset los 10 Champions concentran revenue desproporcionado (correcto). La implicacion de que 1 cliente Champions vale mas que 50 Lost justifica economicamente la inversion diferencial en programas VIP (correcto). En el Scatter Plot F vs M, Champions tiene alta F y alto M = esquina superior derecha = verde según paleta semántica del curso (correcto). Opcion D es FALSA y contraproducente: el material indica explicitamente que la estrategia para Lost es "recuperacion bajo costo o dejar de invertir" — invertir el mismo presupuesto que en Champions en clientes Lost tiene ROI negativo esperado porque su probabilidad de conversion es muy baja.'
+    },
+    { text:'En el contexto del pipeline KDD de la clase, ¿cuales de las siguientes afirmaciones sobre el uso de K-Means con k=4 son CORRECTAS? Selecciona las 3 que correspondan.',
+      opts:[
+        'El valor k=4 se eligio para mapear directamente a los 4 segmentos de negocio del modelo RFM: Champions, Loyal, At Risk y Lost — la eleccion de k esta guiada por el conocimiento del dominio, no solo por metricas estadisticas',
+        'El VectorAssembler con inputCols=["R","F","M"] convierte las tres metricas de cada cliente en un vector de 3 dimensiones (un punto en el espacio R3) que K-Means usa para calcular distancias euclidianas entre clientes y centroides',
+        'K-Means garantiza encontrar la particion OPTIMA global de los clientes; ejecutar el algoritmo multiples veces con distintas semillas aleatorias siempre producira exactamente los mismos 4 clusters con los mismos centroides',
+        'Despues de aplicar K-Means, el paso de Interpretacion del KDD es critico porque los clusters numericos (0,1,2,3) no tienen etiquetas de negocio — el analista debe examinar los centroides de cada cluster para asignar manualmente las etiquetas Champions, Loyal, At Risk, Lost segun los valores promedio de R, F y M'
+      ],
+      correct:[0,1,3],
+      just:'Correcto: k=4 guiado por dominio RFM (correcto — la eleccion de k combina criterio de negocio con validacion estadistica como Silhouette). VectorAssembler crea vectores en R3 para el calculo de distancias euclidianas (correcto — es exactamente lo que hace MLlib). La interpretacion manual de etiquetas es obligatoria porque K-Means produce clusters 0,1,2,3 sin semantica de negocio (correcto — examinar centroides para asignar Champions al cluster con R bajo, F alto, M alto, etc.). Opcion C es FALSA: K-Means NO garantiza optimo global — es un algoritmo de optimizacion local sensible a la inicializacion de centroides. Con distintas semillas aleatorias puede producir diferentes particiones localmente optimas. Por eso MLlib incluye el parametro seed y se recomienda multiple inicializaciones (k-means++).'
+    },
+    { text:'El material indica que la estrategia para At Risk es "campaña winback + encuestas de satisfaccion". ¿Cuales razonamientos CORRECTAMENTE justifican por que At Risk recibe esta estrategia especifica y no otras? Selecciona las 2 que correspondan.',
+      opts:[
+        'At Risk (R: alta, historial de F y M buenos) solian comprar bien pero se alejaron recientemente; tienen LTV (Lifetime Value) demostrado historicamente, lo que hace rentable invertir en reactivarlos porque la probabilidad de que respondan es mayor que en Lost',
+        'At Risk recibe campaña winback porque su F y M son identicos a Champions; la unica diferencia es cosmética (el nombre del segmento), por lo que cualquier estrategia de Champions funciona igualmente bien para At Risk sin necesidad de personalizacion',
+        'La encuesta de satisfaccion para At Risk permite identificar la CAUSA del alejamiento (precio, calidad, experiencia, competidor); sin conocer la causa, la campaña de descuento puede ser costosa e inefectiva si el cliente se fue por una razon no relacionada con el precio',
+        'At Risk debe tratarse exactamente igual que Lost porque ambos segmentos tienen R alta (no han comprado recientemente); la distincion entre ambos segmentos es arbitraria y no tiene implicaciones estrategicas diferenciadas'
+      ],
+      correct:[0,2],
+      just:'Correcto: At Risk tiene LTV historico demostrado (alguna vez fueron buenos clientes con F y M decentes), lo que hace rentable reactivarlos — su probabilidad de conversion con una campana winback es significativamente mayor que la de Lost, que tienen F y M bajos tambien. La encuesta diagnostica la causa del alejamiento antes de invertir en descuentos — si el cliente se fue por mala experiencia de servicio, un descuento del 15% no resolvera el problema de raiz (correcto). Opcion B FALSA: At Risk NO tiene F y M identicos a Champions — tienen R alta (no compran hace tiempo), F y M probablemente intermedios. Son segmentos distintos con perfiles distintos. Opcion D FALSA: At Risk y Lost SON distintos — At Risk tiene historial de valor; Lost tiene R muy alta, F baja Y M baja. La distinction NO es arbitraria: tiene implicaciones economicas directas sobre el ROI esperado de cada estrategia.'
+    },
+    { text:'¿Cuales afirmaciones sobre la capa BRONZE del pipeline y su rol dentro del ciclo KDD son CORRECTAS? Selecciona las 3 que correspondan.',
+      opts:[
+        'La capa Bronze corresponde al paso 01 SELECCION del KDD: elegir el subconjunto de datos relevante para el objetivo analitico y persistirlo en el sistema de almacenamiento sin modificaciones',
+        'Guardar los datos crudos en formato Delta en Bronze (df_raw.write.format("delta").mode("overwrite").save("/mnt/bronze/ventas_raw")) permite volver al dato original si las transformaciones Silver producen resultados inesperados, garantizando trazabilidad completa del linaje de datos',
+        'En Bronze se deben aplicar las 6 reglas de limpieza antes de guardar, porque el formato Delta requiere que los datos esten limpios y sin nulos para poder escribir correctamente en el sistema de archivos distribuido de Databricks',
+        'La diferencia entre Bronze y una tabla transaccional de base de datos operacional (OLTP) es que Bronze usa formato Delta (optimizado para lectura analitica y versionamiento) mientras que OLTP usa formato de paginas relacional (optimizado para escrituras transaccionales con ACID y locks)'
+      ],
+      correct:[0,1,3],
+      just:'Correcto: Bronze = Paso 01 SELECCION del KDD, ingesta sin transformar (correcto por definicion del pipeline del curso). Guardar en Delta permite revertir a dato original si Silver produce anomalias — es el principio de "siempre puedes volver al origen" del pipeline medallion (correcto). La diferencia tecnica entre Delta (columnar, optimizado para analytics, versionamiento, time travel) y OLTP relacional (orientado a filas, optimizado para INSERT/UPDATE concurrentes, locks de transaccion) es un concepto clave del curso (correcto). Opcion C es COMPLETAMENTE FALSA: en Bronze se guardan los datos TAL COMO LLEGAN, SIN limpiar — exactamente lo opuesto. Las 6 reglas de limpieza se aplican en la capa SILVER. Aplicarlas en Bronze destruiria el proposito de trazabilidad que justifica la existencia de la capa Bronze.'
+    }
+  ]
+},
+
+{ id:2, title:'Data Story y Narrativa en 3 Actos', icon:'📖', color:'green', type:'truefalse',
+  desc:'Data Storytelling · Reporte vs Data Story · 3 Actos · Cuantificacion de impacto · Deck 12-15 slides',
+  questions:[
+    { text:'Segun el material del curso, la diferencia fundamental entre un REPORTE y un DATA STORY es que el reporte enumera datos mientras que el data story predice el impacto con una narrativa causal: "Si no actuamos en 30 dias, perdemos $15,000 de clientes recurrentes".',
+      correct:true,
+      just:'VERDADERO y es el concepto central del Bloque VI-VII. Un reporte dice: "87 clientes At Risk, $15,000 en riesgo". Un data story dice: "Si no lanzamos la campana winback en los proximos 30 dias para los 87 clientes At Risk inactivos desde hace 6 meses, perderemos $15,000 de revenue recurrente — lo que representa el 12% del ingreso mensual proyectado". La diferencia es la CAUSALIDAD + URGENCIA + CUANTIFICACION DEL IMPACTO FUTURO. El data story convierte datos en decision: le dice al gerente QUE PASARA si actua o no actua, no solo QUE PASO. Esta distincion (reporte descriptivo vs. data story prescriptivo) esta explicitamente en la diapositiva "La Diferencia: Reporte vs. Data Story" del material.'
+    },
+    { text:'El Acto 2 (CONFLICTO) del Data Story es el mas importante porque contiene los hallazgos criticos cuantificados en dolares. Segun el material, cada hallazgo del Acto 2 DEBE incluir su implicacion de negocio directa — no es suficiente presentar el numero sin la consecuencia.',
+      correct:true,
+      just:'VERDADERO. El material indica explicitamente en "FORMATO DEL DECK": "Estructura modular: Cada hallazgo del Acto 2 debe incluir su implicacion de negocio directa." Ejemplo: no es suficiente decir "87 clientes At Risk" — hay que incluir "87 clientes At Risk que representan $15,000 USD en riesgo de perdida en los proximos 30 dias" (implicacion economica directa). Esta exigencia transforma el Acto 2 de una lista de numeros en una narrativa de riesgo/oportunidad que activa la decision gerencial. El Acto 2 sin implicaciones de negocio es solo un reporte disfrazado de data story.'
+    },
+    { text:'Segun el Principio 2 de Visualizacion Efectiva (Evergreen, 2017) estudiado en clase, un dashboard que incluye en UNA SOLA visualizacion la distribucion por segmento, la evolucion temporal mensual y el top 10 de clientes con sus metricas R, F, M individuales es MAS efectivo que tres visualizaciones separadas, porque el usuario puede ver toda la informacion de un vistazo.',
+      correct:false,
+      just:'FALSO. El Principio 2 de Evergreen (2017) es "Una pregunta, un grafico": cada visualizacion debe responder UNA sola pregunta de negocio. Combinar distribucion por segmento + evolucion temporal + tabla detallada de top 10 en un solo visual viola este principio y crea exactamente el tipo de "ruido visual" que el Principio 4 (Eliminar ruido) advierte evitar. En el dashboard de la Actividad 4, el material define 4 visualizaciones SEPARADAS precisamente para que cada una responda una pregunta especifica: VIZ1 (cuantos clientes y cuanto revenue hay en total), VIZ2 (cual segmento domina), VIZ3 (como se distribuyen F vs M por segmento), VIZ4 (quienes son los 10 mejores). Menos visualizaciones no es mejor: visualizaciones enfocadas y separadas permiten al usuario procesar cada insight sin sobrecarga cognitiva.'
+    },
+    { text:'El Slicer por Segmento es el FILTRO OBLIGATORIO del dashboard de la Actividad 4 y debe afectar a TODOS los visuales simultaneamente. Esto significa que si el usuario selecciona "Champions" en el Slicer, los KPI Cards, el grafico de barras, el scatter plot Y la tabla Top 10 deben actualizarse para mostrar solo datos de Champions.',
+      correct:true,
+      just:'VERDADERO. El material indica explicitamente: "FILTRO OBLIGATORIO: Slicer por Segmento. Debe afectar a TODOS los visuales simultaneamente. Esto demuestra la verdadera interactividad y potencia analitica del dashboard." En Power BI esto se logra cuando todas las visualizaciones estan en la misma pagina y el modelo de datos tiene las relaciones correctas — el Slicer filtra el contexto de evaluacion de todas las medidas DAX de la pagina. En Looker Studio se logra con los filtros de control que afectan a todos los graficos del reporte. La interactividad sincronizada es justamente lo que diferencia un dashboard analitico de un conjunto de imagenes estaticas exportadas desde Excel.'
+    },
+    { text:'Para grabar el video Loom de 3-5 minutos de la Actividad 4, el material recomienda usar el modo "Screen Only" (solo pantalla, sin camara) para no distraer la atencion del evaluador con la imagen del expositor y mantener el foco en el dashboard.',
+      correct:false,
+      just:'FALSO. El material indica explicitamente que el modo a usar es "Screen + Cam" (pantalla MAS camara). La razon es profesional: en una presentacion ejecutiva real, mostrar la camara junto con el dashboard transmite confianza, dominio del tema y presencia profesional — el evaluador puede ver las reacciones y el lenguaje corporal del expositor, que son parte de la competencia de comunicacion evaluada en el Criterio 5 (Defensa). "Screen Only" es el modo que minimiza la presencia del expositor — aceptable para tutoriales tecnicos, pero inadecuado para una presentacion de insights a directivos donde la comunicacion personal es parte del producto final. El consejo del material es "practicar el guion 2-3 veces para hacer UNA sola toma sin errores".'
+    }
+  ]
+},
+
+{ id:3, title:'Dashboard y Principios de Visualizacion', icon:'📊', color:'orange', type:'multiple',
+  desc:'Power BI vs Looker Studio · 4 VIZ obligatorias · Principios Evergreen · Paleta semantica · Anti-patrones',
+  questions:[
+    { text:'Un equipo usa Power BI Desktop y quiere entregar el dashboard de la Actividad 4 mediante un link publicable que cualquier evaluador pueda abrir sin instalar software. ¿Por que esto es IMPOSIBLE con Power BI Desktop gratuito y cual es la alternativa recomendada en el material?',
+      opts:[
+        'Es posible con Power BI Desktop: basta con exportar el archivo .pbix y compartirlo por email; cualquier persona puede abrirlo directamente en el navegador desde OneDrive sin necesidad de licencia adicional',
+        'Power BI Desktop tiene la limitacion explicita de que NO publica dashboards a la web de forma gratuita; publicar a Power BI Service requiere licencia Pro ($10/mes). La alternativa recomendada en el material es Looker Studio (lookerstudio.google.com), que publica con link publico de forma completamente gratuita y es multi-OS (Mac, Linux, Windows)',
+        'Power BI Desktop puede publicar gratis a la web usando la opcion "Publicar en la Web" del menu Archivo, pero el link caduca automaticamente a las 24 horas de la publicacion, por lo que hay que regenerarlo justo antes de la entrega'
+      ],
+      correct:1,
+      just:'El material es explicito: Power BI Desktop tiene la "Limitacion: solo Windows, no publica gratis a web" y recomienda "Para la actividad: exportar como PDF o captura de pantalla". En cambio, Looker Studio "Publica el dashboard con un link funcional para la entrega" y es "RECOMENDADO para la actividad: genera link publicable". La razon tecnica: Power BI Service (que publica a web) requiere licencia Pro o Premium; Power BI Desktop es solo para creacion y visualizacion local. Opcion A incorrecta: un .pbix compartido por OneDrive NO se puede ver en navegador sin Power BI Desktop instalado o una cuenta Power BI Service. Opcion C incorrecta: "Publicar en la Web" en Power BI Desktop SI existe pero crea una visualizacion publica sin autenticacion y con limitaciones severas — el material no la recomienda para la actividad.'
+    },
+    { text:'La VIZ 3 obligatoria es un Scatter Plot con Frequency en el eje X y Monetary en el eje Y, coloreado por segmento RFM. Un estudiante pregunta por que no se usa un grafico de barras para esta visualizacion tambien. ¿Cual es el argumento tecnico correcto del material?',
+      opts:[
+        'El Scatter Plot F vs M es la unica visualizacion que permite ver SIMULTANEAMENTE la correlacion entre dos metricas cuantitativas continuas, identificar los clusters K-Means como nubes de puntos y detectar outliers (los "super Champions" que se alejan del centroide principal) — lo que un grafico de barras no puede mostrar al agregar valores en categorias discretas',
+        'El Scatter Plot se usa exclusivamente por razones esteticas: las barras son visualmente "aburridas" para una audiencia ejecutiva moderna y el scatter plot comunica mayor sofisticacion tecnica del equipo aunque la informacion transmitida sea identica',
+        'El grafico de barras no puede renderizarse en Looker Studio cuando los datos provienen de una tabla con mas de 1,000 filas, por lo que el scatter plot es la unica alternativa tecnicamente viable para el dataset RFM de 4,312 clientes'
+      ],
+      correct:0,
+      just:'El Scatter Plot F vs M visualiza la DISTRIBUCION CONJUNTA de dos metricas continuas: cada punto es un cliente, su posicion X es su Frecuencia y su posicion Y es su Monto, y el color revela a que cluster K-Means pertenece. Esto permite ver: (1) las 4 "nubes" de puntos correspondientes a los 4 segmentos, (2) la separacion entre clusters (validando visualmente el Silhouette Score), y (3) outliers — clientes con M o F extremadamente altos que son los "super Champions" de mayor valor. Un grafico de barras agrega los valores (suma o promedio de M por segmento) y pierde completamente la informacion de distribucion individual. El Principio 2 de Evergreen aplica aqui: la pregunta "¿Como se relacionan F y M entre los clusters?" solo tiene respuesta visual en un scatter plot, no en barras. Opciones B y C son falsas: estetica y limitaciones tecnicas de renderizado no son las razones.'
+    },
+    { text:'El material presenta 5 Principios de Visualizacion Efectiva (Evergreen, 2017). Un evaluador observa que el dashboard de un equipo usa 12 colores distintos para las barras del grafico de distribucion por segmento RFM (uno diferente para cada mes del año que se muestra). ¿Que principios especificos estan siendo violados y como deberia corregirse?',
+      opts:[
+        'Se viola el Principio 3 (Jerarquia Visual) unicamente; la correccion es ordenar las barras de mayor a menor valor para que lo mas importante se vea primero, sin cambiar la paleta de colores ya que los 12 colores distintos no constituyen un anti-patron en un grafico de barras temporal',
+        'Se violan el Principio 4 (Eliminar ruido: quitar colores sin significado) y el Principio 5 (Paleta Semantica: colores con significado). El anti-patron especifico mencionado en el material es "Usar 15 colores distintos en un mismo grafico de barras". La correccion es usar 4 colores con significado (Verde=Champions, Rojo=Lost, Naranja=At Risk, Azul=Loyal) para el grafico de segmentos, o un solo color con distintas intensidades para el grafico temporal',
+        'No se viola ningun principio: el Principio 1 (Claridad sobre creatividad) permite usar cualquier cantidad de colores siempre que el grafico sea tecnicamente correcto y los datos sean precisos; la creatividad cromatica es un indicador positivo de dominio de la herramienta de visualizacion'
+      ],
+      correct:1,
+      just:'El material menciona EXPLICITAMENTE como anti-patron: "Usar 15 colores distintos en un mismo grafico de barras. Este es un error comun de principiantes que destruye la legibilidad y el enfoque del usuario." Los principios violados son: Principio 4 (Eliminar ruido: los 12 colores distintos sin significado son ruido visual puro — distraen sin aportar informacion adicional) y Principio 5 (Paleta Semantica: los colores deben tener significado predefinido: Verde=Champions, Rojo=Lost, Naranja=At Risk, Azul=Loyal). La correccion especifica del material para el grafico de barras por segmento es: "Ordenado de mayor a menor. Colores semanticos: Verde (Champions) y Rojo (Lost)" — los 4 segmentos tienen 4 colores con significado, no 12 colores arbitrarios. Opciones A y C son incorrectas: A solo menciona el Principio 3 y omite los realmente violados; C niega que exista el problema, lo cual contradice directamente el material.'
+    },
+    { text:'En la estructura del Data Story en 3 Actos para la Actividad 4, un equipo presenta: Acto 1 (contexto del dataset), Acto 2 (resultados de K-Means: cluster 0 tiene 10 clientes, cluster 1 tiene 141, cluster 2 tiene 3119, cluster 3 tiene 1042) y Acto 3 (grafico de barras de los clusters). El docente califica con nota minima el Acto 2. ¿Por que?',
+      opts:[
+        'El Acto 2 presentado no tiene ningun problema tecnico; el docente califica con nota minima porque el equipo uso Looker Studio en lugar de Power BI, y la rubrica de evaluacion requiere especificamente el uso de Power BI para la creacion del dashboard',
+        'El Acto 2 solo presenta los numeros brutos de K-Means (cluster 0, 1, 2, 3 con sus conteos) sin traducirlos a lenguaje de negocio ni cuantificar el impacto economico. El material exige que el Acto 2 contenga "hallazgos criticos cuantificados ($) con su implicacion de negocio directa" — por ejemplo: "3,119 clientes At Risk representan $XX,000 en revenue en riesgo en los proximos 30 dias"',
+        'El Acto 2 es correcto pero el problema es el Acto 3: presentar un grafico de barras al final en lugar del scatter plot obligatorio viola la rubrica que requiere las 4 VIZ en el orden especifico definido por el material'
+      ],
+      correct:1,
+      just:'El material es muy especifico: "Hallazgos criticos: 2% genera el 45% de ingresos. 87 clientes (At Risk) inactivos hace 6 meses. Riesgo: $15,000 USD." El Acto 2 debe cuantificar el impacto en dolares y dar la implicacion de negocio. Presentar "cluster 0 tiene 10 clientes" sin decir "estos 10 clientes Champions representan $X de revenue anual = el Y% del total" es exactamente lo que el material define como "reporte" en lugar de "data story". El evaluador espera la traduccion del resultado tecnico (numeros de cluster) al lenguaje del negocio (impacto economico, riesgo cuantificado, oportunidad concreta). "La diferencia: Un reporte enumera datos. Un data story predice el impacto". Opciones A y C son falsas: A inventa una restriccion de herramienta que no existe; C identifica un problema real pero no es el que explica la nota minima en el Acto 2 especificamente.'
+    },
+    { text:'Para la VIZ 1 del dashboard (KPI Cards con 3 tarjetas: Total Clientes, Revenue y Promedio), un estudiante propone usar un grafico de pastel (pie chart) en lugar de las tarjetas KPI porque considera que el pastel es "mas visual". ¿Que argumento del material justifica por que las KPI Cards son la eleccion correcta para esta visualizacion especifica?',
+      opts:[
+        'Las KPI Cards son correctas porque el grafico de pastel esta prohibido en Power BI y Looker Studio para datasets con mas de 4,312 filas; las herramientas arrojan un error tecnico al intentar renderizar un pastel con esa cantidad de puntos de datos',
+        'Las KPI Cards responden la pregunta "¿cual es el valor total de este KPI ahora?" con un numero unico destacado y comparacion vs. periodo anterior — lo cual es imposible con un pastel. El Principio 2 de Evergreen (una pregunta, un grafico) indica que para mostrar UNA metrica agregada, la tarjeta KPI es el tipo correcto; el pastel seria apropiado para mostrar proporciones de un todo (como la distribucion de clientes por segmento), no para KPIs individuales',
+        'Las KPI Cards son correctas porque el grafico de pastel solo puede mostrar maximo 3 categorias sin perder legibilidad, y el dashboard RFM tiene 4 segmentos; esto hace que el pastel sea tecnicamente incompatible con los datos del modelo RFM de la actividad'
+      ],
+      correct:1,
+      just:'El Principio 2 de Evergreen es clave: cada visualizacion debe responder UNA sola pregunta de negocio. La pregunta de VIZ 1 es "¿cuanto es el Total Clientes / Revenue / Promedio ahora y como compara con el periodo anterior?" — es una pregunta de valor puntual con comparacion temporal. La KPI Card responde exactamente eso: muestra el numero grande con etiqueta clara y la variacion porcentual vs. periodo anterior. Un pastel mostraria proporciones de un todo (ej: "¿que porcentaje del revenue viene de cada segmento?"), que es una pregunta completamente distinta y es la de VIZ 2. El Principio 1 (Claridad sobre creatividad) refuerza: el pastel seria "mas bonito" pero menos claro para responder la pregunta de KPI. Opciones A y C son falsas: A inventa limitaciones tecnicas inexistentes; C la limitacion de 3 categorias en pasteles es una convencion de buenas practicas, no una restriccion tecnica absoluta.'
+    }
+  ]
+},
+
+{ id:4, title:'Pipeline Silver y Transformaciones Gold', icon:'🔬', color:'teal', type:'dragdrop',
+  desc:'Reglas R1-R6 · TotalAmount · ref_date · Metrica Silhouette · Segmento correcto — completa los enunciados',
+  bankWords:['Silver','Champions','Silhouette','TotalAmount','ref_date'],
+  questions:[
+    { before:'La metrica derivada calculada en la regla R6 del pipeline como Quantity × UnitPrice, que representa el valor monetario de cada linea de transaccion y es la base para calcular la suma del Monto en el modelo RFM, se llama ',
+      after:'; su calculo en la capa Silver (no en Gold) garantiza que todas las capas posteriores usen una definicion consistente de "valor de venta".',
+      correct:'TotalAmount',
+      just:'TotalAmount = Quantity × UnitPrice es la metrica clave de la R6 del pipeline Silver. Se calcula en Silver (no en Gold ni en Bronze) por dos razones: (1) ya estan limpios los datos (Quantity > 0 y UnitPrice > 0 garantizados por R4 y R5), por lo que el calculo es valido y sin valores negativos; (2) al definirlo en Silver, cualquier capa downstream (Gold, Dashboard) puede usarlo directamente sin recalcular, garantizando consistencia. Si TotalAmount se calculara en Gold pero no en Silver, diferentes notebooks podrian usar formulas distintas y producir resultados inconsistentes. En la capa Gold, M = SUM(TotalAmount) agrupado por CustomerID.'
+    },
+    { before:'La fecha de corte usada para calcular la Recencia en la capa Gold, definida como max_date + timedelta(days=1) en lugar de la fecha actual del sistema, se llama ',
+      after:'; su diseno garantiza que el pipeline sea reproducible: el mismo notebook ejecutado hoy o en seis meses producira exactamente el mismo valor de R para cada cliente del dataset.',
+      correct:'ref_date',
+      just:'ref_date = max(InvoiceDate) + 1 dia es una decision de diseno critica para la reproducibilidad del analisis. Si se usara datetime.now(), el valor R de cada cliente aumentaria cada dia que pasa (un cliente que hoy tiene R=30 dias tendria R=31 dias manana). Esto haria que el mismo notebook ejecutado en distintas fechas produjera segmentaciones diferentes para los mismos datos — el analisis no seria auditable ni comparable entre ejecuciones. Con ref_date fija al dia siguiente de la ultima transaccion del dataset, R es determinista: siempre el mismo valor para el mismo cliente en el mismo dataset. Este principio de reproducibilidad es fundamental en ciencia de datos para que los resultados sean verificables por terceros.'
+    },
+    { before:'La capa del pipeline donde se aplican las 6 reglas de limpieza (dropDuplicates, dropna, filtro de canceladas, cast de tipos, filtro de valores invalidos y calculo de TotalAmount) se llama capa ',
+      after:'; su output se guarda en formato Delta en /mnt/silver/ventas_clean y corresponde a los pasos 02 PREPROCESO y 03 TRANSFORMACION del ciclo KDD de Fayyad et al. (1996).',
+      correct:'Silver',
+      just:'La capa Silver es la de "datos limpios y enriquecidos". Los 6 pasos del KDD mapean al pipeline: SELECCION (Bronze: ingestar), PREPROCESO (Silver: R1 duplicados, R2 nulos, R3 canceladas, R4 tipos), TRANSFORMACION (Silver: R5 invalidos, R6 TotalAmount), MINERIA (Gold: K-Means), INTERPRETACION (Gold: etiquetas Champions/Loyal/At Risk/Lost), CONOCIMIENTO (Dashboard). Silver cubre dos pasos del KDD porque tanto la limpieza (preproceso) como la estandarizacion y creacion de campos derivados (transformacion) ocurren en esa capa antes de pasar a la mineria en Gold. El material mapea explicitamente: "PIPELINE Silver" para los pasos P2 y P3.'
+    },
+    { before:'La metrica estadistica de validacion de clustering que mide la cohesion interna de los clusters versus su separacion externa, va de -1 a +1, y obtuvo un valor de 0.7904 en la Actividad 3, se llama Score de ',
+      after:'; un valor cercano a +1 indica que los puntos de cada cluster estan bien agrupados entre si y bien separados de los otros clusters, validando la calidad de la segmentacion RFM.',
+      correct:'Silhouette',
+      just:'El Silhouette Score (Rousseeuw, 1987) es la metrica de validacion de clustering no supervisado mas usada. Para cada punto i: s(i) = (b(i) - a(i)) / max(a(i), b(i)), donde a(i) = cohesion (distancia media a puntos del mismo cluster) y b(i) = separacion (distancia media al cluster vecino mas cercano). Valores: +1 = perfectamente bien asignado, 0 = en el borde entre clusters, -1 = probablemente mal asignado. 0.7904 es un valor excelente (tipicamente > 0.7 se considera buena segmentacion). Este valor valida que los 4 segmentos RFM generados por K-Means con k=4 tienen alta cohesion interna y buena separacion — los Champions son claramente distintos de los Lost, etc.'
+    },
+    { before:'El segmento RFM caracterizado por R bajo, F alta y M alta — los mejores clientes del negocio que compraron recientemente, con alta frecuencia y alto gasto total — recibe la etiqueta ',
+      after:'; la estrategia recomendada en clase para este segmento son programas VIP, descuentos exclusivos y convertirlos en embajadores de marca porque tienen el mayor Customer Lifetime Value (CLV) del portafolio.',
+      correct:'Champions',
+      just:'Champions es el segmento de mayor valor en el modelo RFM: R bajo (compraron recientemente), F alta (compran con frecuencia), M alta (gastan mucho). Son los "mejores clientes" y tipicamente representan el 15-20% del total pero generan el 60-70% de los ingresos (Pareto 80/20). Las estrategias de Champions son de RETENCION Y AMPLIFICACION: programas VIP (hacer que se sientan exclusivos), descuentos exclusivos (recompensar su lealtad), embajadores de marca (aprovechar su alta satisfaccion para referidos). En el scatter plot F vs M del dashboard, aparecen en la esquina superior derecha (alta F y alto M) con color VERDE segun la paleta semantica. Perder un cliente Champion tiene mayor impacto en revenue que perder 50 clientes Lost.'
+    }
+  ]
+},
+
+{ id:5, title:'Integracion KDD-Dashboard-Storytelling y Rubrica', icon:'🏆', color:'blue', type:'multiselect',
+  desc:'Criterios de evaluacion · Integracion pipeline completo · Decisiones de negocio · Looker Studio vs Power BI avanzado — selecciona las que correspondan',
+  questions:[
+    { text:'La rubrica de la Actividad 3 asigna 5 puntos al Criterio 2 (Limpieza Silver) exigiendo "6+ reglas justificadas con criterio de negocio". ¿Cuales afirmaciones son CORRECTAS sobre lo que requiere este criterio para obtener el puntaje maximo? Selecciona las 3 que correspondan.',
+      opts:[
+        'No es suficiente codificar las 6 reglas correctamente — cada regla debe tener documentada su JUSTIFICACION DE NEGOCIO: por que esa regla es necesaria para el analisis RFM especificamente (ej: "R1 elimina duplicados que inflarian F artificialmente")',
+        'La tabla de transformaciones exigida debe mostrar el antes y despues: cuantos registros habia antes de cada regla, cuantos quedaron despues, y que porcentaje del dataset fue eliminado con esa regla especifica',
+        'Las 6 reglas son opcionales si el Silhouette Score final es mayor a 0.75, porque un score alto demuestra automaticamente que la limpieza fue adecuada sin necesidad de documentarla explicitamente',
+        'R3 (filtrar InvoiceNo que empiezan con "C") debe justificarse especificamente diciendo que las cancelaciones tienen Quantity negativa y que incluirlas produciria TotalAmount negativo que invalida la metrica M del modelo RFM'
+      ],
+      correct:[0,1,3],
+      just:'El criterio exige justificacion DE NEGOCIO: cada regla debe explicar POR QUE es necesaria para el analisis especifico, no solo QUE hace tecnicamente (correcto). La tabla de transformaciones (before/after con conteos y porcentajes) es la evidencia que demuestra el impacto de cada regla — sin ella no se puede evaluar si la limpieza fue correcta (correcto). R3 justificacion especifica: cancelaciones → Quantity negativa → TotalAmount negativo → M invalida en RFM (correcto — es la justificacion de negocio concreta que el evaluador espera). Opcion C es FALSA: el Silhouette Score valida la calidad del clustering, NO la calidad de la limpieza. Un Silhouette Score alto con datos sucios puede ser resultado de clusters artefactuales generados por los datos incorrectos. La documentacion es obligatoria independientemente del score.'
+    },
+    { text:'El material establece que el video Loom de la Actividad 4 debe tener estructura de 5 minutos: 30 seg presentacion del caso, 2 min recorrido por visualizaciones, 1.5 min el insight mas importante y 1 min recomendacion estrategica. ¿Cuales afirmaciones sobre esta estructura son CORRECTAS? Selecciona las 2 que correspondan.',
+      opts:[
+        'El insight mas importante (1.5 min) debe presentarse con el formato del Acto 2 del Data Story: el hallazgo cuantificado en dolares + la implicacion de negocio directa + la urgencia temporal ("si no actuamos en X dias")',
+        'La recomendacion estrategica del minuto final debe ser generica y aplicable a cualquier empresa del sector, para demostrar que el equipo entiende los principios universales de CRM mas alla del caso especifico de la PyME analizada',
+        'El recorrido por visualizaciones (2 min) no debe limitarse a describir "aqui hay un grafico de barras" sino demostrar la INTERACTIVIDAD: mostrar en vivo como el Slicer por Segmento actualiza simultaneamente los 4 visuales del dashboard',
+        'El consejo del material "practicar el guion 2-3 veces" es opcional para estudiantes con experiencia previa en presentaciones; la practica solo se recomienda para quienes nunca han grabado un video profesional anteriormente'
+      ],
+      correct:[0,2],
+      just:'El insight mas importante debe seguir el formato del Data Story: hallazgo cuantificado + implicacion economica + urgencia temporal (correcto — esto es exactamente el Acto 2 aplicado al segmento de video). El recorrido de 2 min debe demostrar INTERACTIVIDAD mostrando el Slicer en accion — simplemente describir los graficos estaticamente no demuestra el valor del dashboard interactivo (correcto). Opcion B FALSA: la recomendacion debe ser ESPECIFICA para la PyME analizada con los datos reales del dataset — las recomendaciones genericas son exactamente lo que el material define como "opinion sin datos" (lo opuesto a data story). Opcion D FALSA: el material dice explicitamente "Practicar el guion 2-3 veces. Una sola toma sin errores demuestra dominio total" — no hay excepcion por experiencia previa; la practica es un requisito de calidad, no una recomendacion opcional.'
+    },
+    { text:'El ciclo KDD de Fayyad et al. (1996) tiene 6 pasos. En el pipeline implementado en clase, ¿cuales mapeos entre pasos KDD y capas del pipeline son CORRECTOS? Selecciona las 3 que correspondan.',
+      opts:[
+        'Paso 01 SELECCION → Capa Bronze (P1): cargar el dataset Online Retail II desde el FileStore y persistirlo en Delta sin transformaciones',
+        'Pasos 02 PREPROCESO y 03 TRANSFORMACION → Capa Silver (P2-P3): los dos pasos ocurren en la misma capa porque ambos preparan los datos para la mineria — limpieza en P2 y calculo de campos derivados como TotalAmount en P3',
+        'Pasos 04 MINERIA y 05 INTERPRETACION → Capa Gold (P4-P5): K-Means produce los clusters numericos en P4 y la asignacion de etiquetas de negocio (Champions, Loyal, At Risk, Lost) ocurre en P5',
+        'Paso 06 CONOCIMIENTO → Capa Silver (P6): el dashboard se construye sobre los datos Silver porque son mas limpios y mas faciles de conectar directamente a Looker Studio o Power BI sin transformaciones adicionales'
+      ],
+      correct:[0,1,2],
+      just:'Mapeos correctos del material: Bronze = Seleccion (P1, correcto). Silver = Preproceso + Transformacion (P2-P3, correcto — el material dice explicitamente "PIPELINE Silver" para ambos pasos). Gold = Mineria + Interpretacion (P4-P5, correcto — K-Means en P4, etiquetas en P5). Opcion D es FALSA: el Paso 06 CONOCIMIENTO corresponde al DASHBOARD (P6), no a Silver. El material indica "PIPELINE Dashboard" para el paso 06. Ademas, conectar el dashboard directamente a Silver seria incorrecto — el dashboard debe conectarse a Gold, que ya tiene los segmentos RFM calculados y el modelo K-Means aplicado. Silver solo tiene datos limpios pero sin la segmentacion que es el producto analitico final.'
+    },
+    { text:'Considerando que la Actividad 4 vale 10 puntos distribuidos en 5 criterios (Dashboard Funcional 2.5 pts, Diseno Visual y UX 2.5 pts, Data Story 2.0 pts, Informe y Video 2.0 pts, Defensa 1.0 pt), ¿cuales estrategias priorizan CORRECTAMENTE el esfuerzo del equipo para maximizar la nota? Selecciona las 2 que correspondan.',
+      opts:[
+        'Invertir la mayor parte del tiempo en el Criterio 1 (Dashboard Funcional) y Criterio 2 (Diseno Visual), que juntos suman 5 de los 10 puntos, asegurandose de que las 4 VIZ obligatorias funcionen, el Slicer afecte todos los visuales y la paleta semantica este correctamente aplicada',
+        'Sacrificar el Criterio 3 (Data Story) para dedicar mas tiempo al codigo del pipeline, porque el docente valora mas la calidad tecnica de PySpark que la narrativa de negocio en la nota final de la actividad',
+        'Asegurarse de que el Data Story del Criterio 3 cuantifique los hallazgos en dolares y presente la narrativa en 3 Actos, porque 2 puntos de 10 que se pierden en una actividad grupal pueden representar la diferencia entre aprobar y no aprobar si otras actividades tambien tienen perdidas',
+        'Omitir el video Loom (Criterio 4) si el tiempo es limitado, ya que el informe PDF solo es suficiente para el Criterio 4 y el evaluador puede ver el dashboard directamente desde el link sin necesidad del video explicativo'
+      ],
+      correct:[0,2],
+      just:'Los Criterios 1 y 2 juntos valen 5 pts de 10 (50% de la nota) — invertir ahi asegura la base de puntuacion y ademas son los criterios mas objetivamente verificables (funciona o no funciona, tiene 4 VIZ o no las tiene). Asegurar el Data Story correcto (3 actos, hallazgos en $) vale 2 pts que en el contexto de una nota grupal son criticos para aprobar — perder 2 pts por omision de narrativa es evitable con preparacion. Opcion B FALSA: la rubrica valoriza explicitamente el Data Story como Criterio 3 con 2 pts; el docente no hace distincion entre valor tecnico y valor narrativo en la rubrica. Opcion D FALSA: el Criterio 4 exige EXPLICITAMENTE "video Loom (3-5 min) Y link al dashboard funcional" — omitir el video representa perder puntos en ese criterio especifico que vale 2 pts; el informe PDF solo no cumple el criterio.'
+    },
+    { text:'¿Cuales afirmaciones sobre la diferencia entre un dashboard de Power BI conectado a datos Silver vs. datos Gold son CORRECTAS para la Actividad 4? Selecciona las 3 que correspondan.',
+      opts:[
+        'Conectar el dashboard a datos Gold es tecnicamente correcto porque Gold ya contiene las metricas RFM calculadas por cliente y las etiquetas de segmento (Champions, Loyal, At Risk, Lost) asignadas por K-Means — el dashboard solo necesita leer y visualizar, no recalcular',
+        'Conectar el dashboard a datos Silver funcionaria pero seria incompleto: Silver tiene transacciones limpias pero no tiene las columnas R, F, M por cliente ni la columna de segmento — habria que agregar y calcular RFM en el dashboard mismo con DAX o formulas de Looker, lo cual duplica logica que ya esta en Gold',
+        'Es indiferente conectar a Silver o Gold porque ambas capas tienen exactamente los mismos datos; la diferencia es solo administrativa (el nombre de la carpeta en DBFS) y no afecta los resultados visualizados en el dashboard',
+        'Exportar la tabla Gold a CSV y subirla a Google Sheets para conectarla desde Looker Studio es una estrategia valida para la entrega: Looker Studio conecta directamente a Google Sheets y puede visualizar las columnas CustomerID, R, F, M, Segment sin transformaciones adicionales'
+      ],
+      correct:[0,1,3],
+      just:'Gold es la fuente correcta para el dashboard porque ya tiene R, F, M y Segment calculados por K-Means — el dashboard solo visualiza, no calcula (correcto). Silver no tiene las columnas RFM ni Segment — si se conecta el dashboard a Silver, hay que agregar y calcular en DAX o Looker, duplicando logica que ya esta en Gold y arriesgando inconsistencias si las formulas difieren (correcto). Exportar Gold a CSV → Google Sheets → Looker Studio es el flujo especifico recomendado en el material para Looker Studio: "Conecta directo a Google Sheets (ideal para CSV Gold)" (correcto). Opcion C es FALSA: Silver y Gold son radicalmente distintos — Silver tiene millones de filas transaccionales sin RFM; Gold tiene 4,312 filas (una por cliente) con R, F, M y cluster. No son equivalentes ni en estructura ni en contenido.'
+    }
+  ]
+}
+];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildActiveSection(sec) {
+  const s = JSON.parse(JSON.stringify(sec));
+  s.questions = shuffle(s.questions);
+  if (s.type === 'multiple') {
+    s.questions = s.questions.map(q => {
+      const indexed = q.opts.map((opt, i) => ({ opt, i }));
+      const sh = shuffle(indexed);
+      const newCorrect = sh.findIndex(x => x.i === q.correct);
+      return { ...q, opts: sh.map(x => x.opt), correct: newCorrect };
+    });
+  } else if (s.type === 'multiselect') {
+    s.questions = s.questions.map(q => {
+      const indexed = q.opts.map((opt, i) => ({ opt, i }));
+      const sh = shuffle(indexed);
+      const correctSet = new Set(q.correct);
+      const newCorrect = sh.reduce((acc, x, ni) => { if (correctSet.has(x.i)) acc.push(ni); return acc; }, []);
+      return { ...q, opts: sh.map(x => x.opt), correct: newCorrect };
+    });
+  } else if (s.type === 'dragdrop') {
+    s.bankWords = shuffle(s.bankWords);
+  }
+  return s;
+}
+
+let ACTIVE_SECTIONS = [];
+
+const CLRS = {
+  blue:  {tab:'#007AFF', badge:'bg-blue-100 text-blue-700'},
+  purple:{tab:'#AF52DE', badge:'bg-purple-100 text-purple-700'},
+  green: {tab:'#34C759', badge:'bg-green-100 text-green-700'},
+  orange:{tab:'#FF9500', badge:'bg-orange-100 text-orange-700'},
+  teal:  {tab:'#5AC8FA', badge:'bg-cyan-100 text-cyan-700'},
+};
+
+let state = {
+  screen: 'intake',
+  student: null,
+  current: 0,
+  answers: null,
+  submitted: false,
+  seconds: 60*60,
+  timerInterval: null,
+  selectedChip: null,
+  consent: false,
+};
+
+function formatDateTimeLocal(date) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatDateTimeForDisplay(value) {
+  const date = value ? new Date(value) : new Date();
+  return date.toLocaleString('es-BO', {dateStyle:'full', timeStyle:'short'});
+}
+
+function checkIntake() {
+  const n = document.getElementById('inp-nombre').value.trim();
+  const c = document.getElementById('inp-codigo').value.trim();
+  const eEl = document.getElementById('inp-email');
+  const e = eEl ? eEl.value.trim() : '';
+  // Validación permisiva: acepta cualquier texto con @ y al menos un punto después
+  const emailOk = e.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const f = document.getElementById('inp-fecha').value;
+  const consentInput = document.getElementById('inp-consent');
+  state.consent = consentInput ? consentInput.checked : state.consent;
+  const ok = n && c && emailOk && f && state.consent;
+  const btn = document.getElementById('btn-start');
+  if (!btn) return;
+  if (ok) {
+    btn.disabled = false;
+    btn.style.background = '#007AFF';
+    btn.style.color = '#fff';
+    btn.className = 'w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-95 cursor-pointer shadow-md';
+    btn.textContent = 'Comenzar Examen ▶';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.className = 'w-full py-4 rounded-2xl font-bold text-base bg-gray-200 text-gray-400 transition-all cursor-not-allowed';
+    btn.textContent = 'Completar todos los campos para continuar';
+  }
+}
+
+function toggleConsent(checked) {
+  state.consent = typeof checked === 'boolean' ? checked : !state.consent;
+  const input = document.getElementById('inp-consent');
+  if (input) input.checked = state.consent;
+  const box = document.getElementById('consent-box');
+  if (box) {
+    if (state.consent) {
+      box.style.background = '#007AFF';
+      box.style.borderColor = '#007AFF';
+      box.innerHTML = '<svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    } else {
+      box.style.background = '';
+      box.style.borderColor = '';
+      box.innerHTML = '';
+    }
+  }
+  checkIntake();
+}
+
+function initializeIntakeScreen() {
+  document.getElementById('inp-fecha').value = formatDateTimeLocal(new Date());
+  checkIntake();
+  // Forzar re-evaluación después de que el browser procese todos los valores iniciales
+  setTimeout(checkIntake, 100);
+  var _poll = setInterval(function() {
+    var el = document.getElementById('intake-screen');
+    if (!el || el.style.display === 'none') { clearInterval(_poll); return; }
+    checkIntake();
+  }, 250);
+}
+
+function startExam() {
+  const n = document.getElementById('inp-nombre').value.trim();
+  const c = document.getElementById('inp-codigo').value.trim();
+  const e = document.getElementById('inp-email').value.trim();
+  const f = document.getElementById('inp-fecha').value;
+  const emailOk = e.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  if (!n||!c||!emailOk||!f||!state.consent) return;
+
+  state.student = { nombre:n, codigo:c, email:e, startTime: formatDateTimeForDisplay(f) };
+  ACTIVE_SECTIONS = shuffle(SECTIONS).map(buildActiveSection);
+  state.answers = ACTIVE_SECTIONS.map(sec => {
+    if (sec.type === 'multiselect') {
+      return Array(sec.questions.length).fill(null).map(() => []);
+    } else {
+      return Array(sec.questions.length).fill(null);
+    }
+  });
+
+  document.getElementById('hd-student').textContent = `${n} · ${c}`;
+  document.getElementById('intake-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = '';
+  startTimer();
+  render();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeIntakeScreen);
+} else {
+  initializeIntakeScreen();
+}
+
+function startTimer() {
+  state.timerInterval = setInterval(()=>{
+    state.seconds--;
+    const m = String(Math.floor(state.seconds/60)).padStart(2,'0');
+    const s = String(state.seconds%60).padStart(2,'0');
+    const el = document.getElementById('timer');
+    if (el) { el.textContent=`${m}:${s}`; if(state.seconds<=300) el.classList.add('text-ios-red','font-black'); }
+    if (state.seconds<=0){ clearInterval(state.timerInterval); confirmSubmit(true); }
+  },1000);
+}
+
+function countAnswered(){
+  let n=0;
+  ACTIVE_SECTIONS.forEach((sec,si)=>{
+    sec.questions.forEach((_,qi)=>{
+      const a=state.answers[si][qi];
+      if(sec.type==='multiselect') { if(a&&a.length>0) n++; }
+      else if(a!==null) n++;
+    });
+  });
+  return n;
+}
+
+function updateProgress(){
+  const ans=countAnswered();
+  document.getElementById('progress-bar').style.width=(ans/30*100)+'%';
+  document.getElementById('prog-pct').textContent=`${ans} / 30`;
+  document.getElementById('prog-label').textContent=`Seccion ${state.current+1} de 6`;
+}
+
+function updateTabs(){
+  ACTIVE_SECTIONS.forEach((sec,i)=>{
+    const tab=document.getElementById(`tab-${i}`);
+    if(!tab) return;
+    tab.textContent = `${sec.icon} ${sec.title.split(' ')[0]}`;
+    tab.className='stab';
+    if(i===state.current){
+      tab.classList.add('active');
+      tab.style.background=CLRS[sec.color].tab;
+      tab.style.borderColor=CLRS[sec.color].tab;
+    } else {
+      tab.style.background=''; tab.style.borderColor='';
+      const a=state.answers[i];
+      const done = sec.type==='multiselect' ? a.some(x=>x&&x.length>0) : a.some(x=>x!==null);
+      if(done) tab.classList.add('done');
+    }
+  });
+}
+
+function render(){ updateTabs(); updateProgress(); updateNavButtons(); renderSection(state.current); }
+
+function updateNavButtons(){
+  const prev=document.getElementById('btn-prev');
+  const next=document.getElementById('btn-next');
+  const sub=document.getElementById('btn-submit');
+  if(prev) prev.disabled=state.current===0;
+  if(next&&sub){
+    if(state.current===ACTIVE_SECTIONS.length-1){ next.style.display='none'; sub.style.display=''; }
+    else { next.style.display=''; sub.style.display='none'; }
+  }
+}
+
+function renderSection(idx, scrollMode){
+  const sec=ACTIVE_SECTIONS[idx];
+  const col=CLRS[sec.color];
+  const main=document.getElementById('main-content');
+  const prevScroll = scrollMode === 'keep' ? window.scrollY : null;
+  let h=`<div class="section-in"><div class="card p-5 mb-5"><div class="flex items-start gap-3"><span class="text-3xl">${sec.icon}</span><div><div class="flex items-center gap-2 mb-1 flex-wrap"><h2 class="text-xl font-bold text-gray-900">${sec.title}</h2><span class="text-xs px-2 py-0.5 rounded-full font-semibold ${col.badge}">${sec.type==='multiple'?'Opcion multiple (1 correcta)':sec.type==='multiselect'?'Seleccion multiple (2+ correctas)':sec.type==='truefalse'?'Verdadero / Falso':'Completar parrafos'}</span></div><p class="text-xs text-ios-second">${sec.desc}</p></div></div></div>`;
+  if(sec.type==='multiple') h+=renderMultiple(sec,idx,col);
+  else if(sec.type==='multiselect') h+=renderMultiSelect(sec,idx,col);
+  else if(sec.type==='truefalse') h+=renderTrueFalse(sec,idx,col);
+  else h+=renderDragDrop(sec,idx,col);
+  h+=`</div>`;
+  main.innerHTML=h;
+  if (prevScroll !== null) {
+    requestAnimationFrame(() => window.scrollTo({top: prevScroll}));
+  } else if (scrollMode !== false) {
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  if(sec.type==='dragdrop') initDragDrop(idx);
+}
+
+function renderMultiple(sec,si,col){
+  let h='<div class="space-y-4">';
+  sec.questions.forEach((q,qi)=>{
+    const ans=state.answers[si][qi]; const sub=state.submitted;
+    h+=`<div class="card p-5"><div class="flex gap-3 mb-4"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col.badge}">${qi+1}</span><p class="text-gray-800 font-medium leading-snug text-sm">${q.text}</p></div><div class="space-y-2">`;
+    q.opts.forEach((opt,oi)=>{
+      let cls='opt p-3 flex items-start gap-3';
+      let circleStyle='width:20px;height:20px;border-radius:99px;border:2px solid #D1D5DB;flex-shrink:0;margin-top:2px';
+      let circleInner='';
+      if(!sub&&ans===oi){ cls+=' sel'; circleStyle='width:20px;height:20px;border-radius:99px;border:2px solid #007AFF;background:#007AFF;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center'; circleInner='<span style="width:8px;height:8px;background:#fff;border-radius:99px;display:block"></span>'; }
+      if(sub&&oi===q.correct){ cls+=' ok'; circleStyle='width:20px;height:20px;border-radius:99px;background:#34C759;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center'; circleInner='<span style="color:#fff;font-size:11px;font-weight:bold">&#10003;</span>'; }
+      if(sub&&ans===oi&&oi!==q.correct){ cls+=' fail'; circleStyle='width:20px;height:20px;border-radius:99px;background:#FF3B30;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center'; circleInner='<span style="color:#fff;font-size:11px;font-weight:bold">&#10007;</span>'; }
+      const icon=`<span class="opt-circle" data-opt-circle="${si}-${qi}-${oi}" style="${circleStyle}">${circleInner}</span>`;
+      h+=`<div class="${cls}" data-opt="${si}-${qi}-${oi}" onclick="${sub?'':'selectSingle('+si+','+qi+','+oi+')'}">${icon}<span class="text-sm text-gray-800">${opt}</span></div>`;
+    });
+    if(sub) h+=`<div class="mt-3 p-3 rounded-xl text-xs leading-relaxed ${ans===q.correct?'bg-green-50 text-green-800':'bg-red-50 text-red-800'}"><span class="font-bold">${ans===q.correct?'&#10003; Correcto':'&#10007; Incorrecto &mdash; la respuesta era: &ldquo;'+q.opts[q.correct]+'&rdquo;'}</span><span class="block mt-1 opacity-80">&#128161; ${q.just}</span></div>`;
+    h+=`</div></div>`;
+  });
+  return h+'</div>';
+}
+
+function selectSingle(si,qi,oi){
+  if(state.submitted) return;
+  state.answers[si][qi]=oi;
+  const q=ACTIVE_SECTIONS[si].questions[qi];
+  q.opts.forEach((_,i)=>{
+    const el=document.querySelector('[data-opt="'+si+'-'+qi+'-'+i+'"]');
+    if(!el) return;
+    const isSel=i===oi;
+    el.className='opt p-3 flex items-start gap-3'+(isSel?' sel':'');
+    const circle=el.querySelector('[data-opt-circle]');
+    if(circle){
+      if(isSel){
+        circle.style.cssText='width:20px;height:20px;border-radius:99px;border:2px solid #007AFF;background:#007AFF;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center';
+        circle.innerHTML='<span style="width:8px;height:8px;background:#fff;border-radius:99px;display:block"></span>';
+      } else {
+        circle.style.cssText='width:20px;height:20px;border-radius:99px;border:2px solid #D1D5DB;background:transparent;flex-shrink:0;margin-top:2px';
+        circle.innerHTML='';
+      }
+    }
+  });
+  updateProgress();
+}
+
+function renderMultiSelect(sec,si,col){
+  let h=`<div class="space-y-4"><div class="flex items-center gap-2 px-1"><span class="w-5 h-5 rounded bg-purple-100 flex items-center justify-center text-purple-700 text-xs flex-shrink-0">&#9745;</span><p class="text-xs text-ios-second">Selecciona <strong>todas</strong> las opciones correctas. Solo obtienes el punto si marcas exactamente las correctas.</p></div>`;
+  sec.questions.forEach((q,qi)=>{
+    const sel=state.answers[si][qi]||[]; const sub=state.submitted;
+    const correct=new Set(q.correct);
+    const allOk = sel.length===q.correct.length && q.correct.every(c=>sel.includes(c));
+    h+=`<div class="card p-5"><div class="flex gap-3 mb-4"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col.badge}">${qi+1}</span><p class="text-gray-800 font-medium leading-snug text-sm">${q.text}</p></div><div class="space-y-2">`;
+    q.opts.forEach((opt,oi)=>{
+      const isSelected=sel.includes(oi);
+      const isCorrect=correct.has(oi);
+      let cls='opt p-3 flex items-start gap-3';
+      let boxCls='cb-box mt-0.5';
+      let boxInner='';
+      if(!sub){
+        if(isSelected){ cls+=' sel'; boxCls+=' checked'; boxInner='<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+      } else {
+        if(isSelected&&isCorrect)  { cls+=' ok';     boxCls+=' ok-check';     boxInner='<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+        if(isSelected&&!isCorrect) { cls+=' fail';   boxCls+=' fail-check';   boxInner='<span style="color:white;font-size:10px;font-weight:bold">&#10007;</span>'; }
+        if(!isSelected&&isCorrect) { cls+=' missed'; boxCls+=' missed-check'; boxInner='<span style="color:white;font-size:10px;font-weight:bold">!</span>'; }
+      }
+      h+=`<div class="${cls}" data-mopt="${si}-${qi}-${oi}" onclick="${sub?'':'toggleMulti('+si+','+qi+','+oi+')'}"><span class="opt-cb ${boxCls}" data-cb="${si}-${qi}-${oi}">${boxInner}</span><span class="text-sm text-gray-800">${opt}</span></div>`;
+    });
+    if(sub){
+      h+=`<div class="mt-3 p-3 rounded-xl text-xs leading-relaxed ${allOk?'bg-green-50 text-green-800':'bg-red-50 text-red-800'}"><span class="font-bold">${allOk?'&#10003; Todas las correctas seleccionadas':'&#10007; Seleccion incorrecta o incompleta'}</span><span class="block mt-1 opacity-80">&#128161; ${q.just}</span></div>`;
+    } else {
+      h+=`<p class="text-xs text-ios-second mt-2 pl-1" data-count="${si}-${qi}">Seleccionadas: ${sel.length} de ${q.correct.length} necesarias</p>`;
+    }
+    h+=`</div></div>`;
+  });
+  return h+'</div>';
+}
+
+function toggleMulti(si,qi,oi){
+  if(state.submitted) return;
+  const arr=state.answers[si][qi]||[];
+  const idx=arr.indexOf(oi);
+  if(idx>=0) arr.splice(idx,1); else arr.push(oi);
+  state.answers[si][qi]=arr;
+  const isSel=arr.includes(oi);
+  const el=document.querySelector('[data-mopt="'+si+'-'+qi+'-'+oi+'"]');
+  if(el){
+    el.className='opt p-3 flex items-start gap-3'+(isSel?' sel':'');
+    const cb=el.querySelector('[data-cb]');
+    if(cb){
+      if(isSel){
+        cb.className='opt-cb cb-box checked mt-0.5';
+        cb.innerHTML='<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      } else {
+        cb.className='opt-cb cb-box mt-0.5';
+        cb.innerHTML='';
+      }
+    }
+  }
+  const counter=document.querySelector('[data-count="'+si+'-'+qi+'"]');
+  if(counter){
+    const q=ACTIVE_SECTIONS[si].questions[qi];
+    counter.textContent='Seleccionadas: '+arr.length+' de '+q.correct.length+' necesarias';
+  }
+  updateProgress();
+}
+
+function renderTrueFalse(sec,si,col){
+  let h='<div class="space-y-4">';
+  sec.questions.forEach((q,qi)=>{
+    const ans=state.answers[si][qi]; const sub=state.submitted;
+    let tCls='tf flex-1', fCls='tf flex-1';
+    if(!sub){ if(ans===true) tCls+=' sel-true'; if(ans===false) fCls+=' sel-false'; }
+    else {
+      if(q.correct===true)  tCls+=' ok'; else tCls+=(ans===true?' fail':'');
+      if(q.correct===false) fCls+=' ok'; else fCls+=(ans===false?' fail':'');
+    }
+    h+=`<div class="card p-5"><div class="flex gap-3 mb-4"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col.badge}">${qi+1}</span><p class="text-gray-800 font-medium leading-snug text-sm">${q.text}</p></div><div class="flex gap-3"><div class="${tCls}" data-tf="${si}-${qi}-true" onclick="${sub?'':'selectTF('+si+','+qi+',true)'}">&#10003; Verdadero</div><div class="${fCls}" data-tf="${si}-${qi}-false" onclick="${sub?'':'selectTF('+si+','+qi+',false)'}">&#10007; Falso</div></div>`;
+    if(sub){ const ok=ans===q.correct;
+      h+=`<div class="mt-3 p-3 rounded-xl text-xs leading-relaxed ${ok?'bg-green-50 text-green-800':'bg-red-50 text-red-800'}"><span class="font-bold">${ok?'&#10003; Correcto':'&#10007; La respuesta es '+(q.correct?'Verdadero':'Falso')}</span><span class="block mt-1 opacity-80">&#128161; ${q.just}</span></div>`;
+    }
+    h+=`</div>`;
+  });
+  return h+'</div>';
+}
+
+function selectTF(si,qi,val){
+  if(state.submitted) return;
+  state.answers[si][qi]=val;
+  const trueEl=document.querySelector('[data-tf="'+si+'-'+qi+'-true"]');
+  const falseEl=document.querySelector('[data-tf="'+si+'-'+qi+'-false"]');
+  if(trueEl) trueEl.className='tf flex-1'+(val===true?' sel-true':'');
+  if(falseEl) falseEl.className='tf flex-1'+(val===false?' sel-false':'');
+  updateProgress();
+}
+
+function renderDragDrop(sec,si,col){
+  const used=state.answers[si].filter(a=>a!==null);
+  const hasActive = !!state.selectedChip;
+  let bank=`<div id="word-bank-sticky" class="card p-4 mb-4" style="position:sticky;top:140px;z-index:30;box-shadow:0 4px 20px rgba(0,0,0,.13);transition:box-shadow .2s ease"><div class="flex items-center justify-between mb-2 gap-2"><p class="text-xs font-semibold text-ios-second uppercase tracking-wide">Banco de palabras</p>${hasActive?`<span class="text-xs text-ios-blue font-semibold animate-pulse">Desplazate y toca el espacio en blanco</span>`:`<span class="text-xs text-ios-second">Toca una palabra para seleccionarla</span>`}</div><div class="flex flex-wrap gap-2">`;
+  sec.bankWords.forEach(w=>{
+    const isUsed   = used.includes(w);
+    const isActive = state.selectedChip===w;
+    let cls='chip';
+    if(isUsed)   cls+=' used';
+    if(isActive) cls+=' active';
+    bank+=`<span class="${cls}" onclick="chipClick(this.dataset.word)" data-word="${w}">${w}</span>`;
+  });
+  bank+=`</div></div>`;
+  let qs='<div class="space-y-4">';
+  sec.questions.forEach((q,qi)=>{
+    const placed=state.answers[si][qi]; const sub=state.submitted;
+    let bCls='blank', bTxt=placed||'toca aqui';
+    if(placed) bCls+=' ready';
+    if(sub&&placed){ bCls=placed===q.correct?'blank ok':'blank fail'; }
+    qs+=`<div class="card p-5"><div class="flex gap-3 mb-3"><span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${col.badge}">${qi+1}</span><p class="text-xs font-semibold text-ios-second uppercase tracking-wide mt-1.5">Completa el enunciado</p></div><p class="text-gray-800 text-sm leading-relaxed">${q.before}<span class="${bCls}" id="blank-${si}-${qi}" onclick="blankClick(${si},${qi})">${bTxt}</span>${q.after}</p>`;
+    if(sub&&placed){ const ok=placed===q.correct;
+      qs+=`<div class="mt-3 p-3 rounded-xl text-xs leading-relaxed ${ok?'bg-green-50 text-green-800':'bg-red-50 text-red-800'}"><span class="font-bold">${ok?'&#10003; Correcto':'&#10007; La palabra correcta es: '+q.correct}</span><span class="block mt-1 opacity-80">&#128161; ${q.just}</span></div>`;
+    }
+    qs+=`</div>`;
+  });
+  return bank+qs+'</div>';
+}
+
+function chipClick(w){
+  if(state.submitted) return;
+  const used=state.answers[state.current].filter(a=>a!==null);
+  if(used.includes(w)&&state.selectedChip!==w) return;
+  state.selectedChip=state.selectedChip===w?null:w;
+  renderSection(state.current,'keep');
+}
+
+function blankClick(si,qi){
+  if(state.submitted||!state.selectedChip) return;
+  state.answers[si][qi]=state.selectedChip;
+  const blank=document.getElementById(`blank-${si}-${qi}`);
+  if(blank){
+    blank.textContent=state.selectedChip;
+    blank.classList.add('ready');
+  }
+  state.selectedChip=null;
+  updateProgress();
+  renderSection(state.current,'keep');
+}
+
+function initDragDrop(idx){}
+
+function goSection(idx){ state.current=idx; state.selectedChip=null; render(); }
+function prevSection(){ if(state.current>0){ state.current--; state.selectedChip=null; render(); } }
+function nextSection(){ if(state.current<ACTIVE_SECTIONS.length-1){ state.current++; state.selectedChip=null; render(); } }
+
+function confirmSubmit(auto=false){
+  if(!auto){
+    showConfirmModal('¿Deseas entregar el examen?', 'No podrás volver atrás. Las preguntas sin responder quedarán en blanco.', function(){
+      doSubmit();
+    });
+    return;
+  }
+  doSubmit();
+}
+
+function showConfirmModal(title, message, onConfirm){
+  // Eliminar modal previo si existe
+  var prev = document.getElementById('confirm-modal');
+  if(prev) prev.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'confirm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)';
+  modal.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center">' +
+    '<div style="font-size:2rem;margin-bottom:12px">📋</div>' +
+    '<p style="font-weight:700;font-size:1rem;color:#1a1a1a;margin:0 0 8px">' + title + '</p>' +
+    '<p style="font-size:.85rem;color:#6C6C70;line-height:1.5;margin:0 0 24px">' + message + '</p>' +
+    '<div style="display:flex;gap:10px">' +
+      '<button id="modal-cancel" style="flex:1;padding:13px;border-radius:13px;border:2px solid #E5E5EA;background:#fff;font-weight:600;font-size:.9rem;color:#6C6C70;cursor:pointer">Cancelar</button>' +
+      '<button id="modal-confirm" style="flex:1;padding:13px;border-radius:13px;border:none;background:#34C759;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;box-shadow:0 4px 14px rgba(52,199,89,.35)">Entregar</button>' +
+    '</div></div>';
+
+  document.body.appendChild(modal);
+
+  document.getElementById('modal-cancel').onclick = function(){
+    modal.remove();
+  };
+  document.getElementById('modal-confirm').onclick = function(){
+    modal.remove();
+    onConfirm();
+  };
+  // Cerrar al tocar el fondo
+  modal.addEventListener('click', function(e){
+    if(e.target === modal) modal.remove();
+  });
+}
+
+function doSubmit(){
+  clearInterval(state.timerInterval);
+  state.submitted=true;
+
+  const correct = ACTIVE_SECTIONS.reduce((sum, sec, si) => {
+    return sum + sec.questions.filter((q, qi) => {
+      const ans = state.answers[si][qi];
+      if (sec.type === 'multiselect') {
+        const ansSet = new Set(ans);
+        const corrSet = new Set(q.correct);
+        return ansSet.size === corrSet.size && [...corrSet].every(c => ansSet.has(c));
+      } else if (sec.type === 'truefalse' || sec.type === 'multiple' || sec.type === 'dragdrop') {
+        return ans === q.correct;
+      }
+      return false;
+    }).length;
+  }, 0);
+
+  const total = ACTIVE_SECTIONS.reduce((sum, s) => sum + s.questions.length, 0);
+  const pct = Math.round((correct / total) * 100);
+  const grade = (correct / total * 20).toFixed(2);
+
+  const ring = document.getElementById('score-ring');
+  if(ring){ ring.style.borderColor = pct>=80?'#34C759':pct>=60?'#FF9500':'#FF3B30'; }
+  document.getElementById('score-num').textContent = correct;
+  document.getElementById('score-label').textContent = pct + '% — ' + (pct>=80?'Excelente':pct>=60?'Bueno':pct>=40?'Regular':'Necesita refuerzo');
+  document.getElementById('score-sub').textContent = correct + ' de ' + total + ' respuestas correctas · Nota: ' + grade + '/20 pts';
+  document.getElementById('res-nombre').textContent = state.student.nombre;
+  document.getElementById('res-codigo').textContent = state.student.codigo;
+  document.getElementById('res-grade').textContent = grade + '/20';
+
+  let breakdown = '';
+  ACTIVE_SECTIONS.forEach((sec, si) => {
+    const sectionCorrect = sec.questions.filter((q, qi) => {
+      const ans = state.answers[si][qi];
+      if (sec.type === 'multiselect') {
+        const ansSet = new Set(ans);
+        const corrSet = new Set(q.correct);
+        return ansSet.size === corrSet.size && [...corrSet].every(c => ansSet.has(c));
+      } else if (sec.type === 'truefalse' || sec.type === 'multiple' || sec.type === 'dragdrop') {
+        return ans === q.correct;
+      }
+    }).length;
+    const pctSec = Math.round((sectionCorrect / sec.questions.length) * 100);
+    breakdown += '<div class="p-3 rounded-lg bg-gray-50 flex justify-between items-center"><span><strong>' + sec.icon + ' ' + sec.title + '</strong><br><span class="text-xs text-ios-second">' + sectionCorrect + '/' + sec.questions.length + ' correctas</span></span><span class="text-lg font-bold ' + (pctSec>=75?'text-green-600':pctSec>=50?'text-orange-600':'text-red-600') + '">' + pctSec + '%</span></div>';
+  });
+  document.getElementById('breakdown').innerHTML = breakdown;
+
+  const insights = generateInsights(ACTIVE_SECTIONS, state.answers);
+  let insightsHtml = '';
+  insights.forEach((insight) => {
+    insightsHtml += '<div class="insight-card ' + insight.level + '"><div class="ic-title">' + insight.topic + '</div><div class="ic-text">' + insight.recommendation + '</div></div>';
+  });
+  document.getElementById('insights-container').innerHTML = insightsHtml || '<p class="text-ios-second text-xs">Analisis en progreso...</p>';
+
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('results-overlay').style.display = '';
+  window.scrollTo({top:0});
+}
+
+function generateInsights(sections, answers) {
+  const insights = [];
+  const scoreBySection = sections.map((sec, si) => {
+    const correct = sec.questions.filter((q, qi) => {
+      const ans = answers[si][qi];
+      if (sec.type === 'multiselect') {
+        const ansSet = new Set(ans);
+        const corrSet = new Set(q.correct);
+        return ansSet.size === corrSet.size && [...corrSet].every(c => ansSet.has(c));
+      } else {
+        return ans === q.correct;
+      }
+    }).length;
+    return { section: sec.title, icon: sec.icon, score: (correct / sec.questions.length) * 100 };
+  });
+
+  scoreBySection.sort((a, b) => a.score - b.score);
+  scoreBySection.slice(0, 2).forEach(item => {
+    insights.push({ level: 'high', topic: item.icon + ' ' + item.section, recommendation: 'Area de refuerzo prioritario. Revisar el material del bloque correspondiente y practicar con ejercicios adicionales antes del segundo parcial.' });
+  });
+  scoreBySection.slice(2, 4).forEach(item => {
+    insights.push({ level: 'medium', topic: item.icon + ' ' + item.section, recommendation: 'Area de mejora. Se recomienda revisar los conceptos clave y reforzar con la bibliografia del curso.' });
+  });
+  scoreBySection.slice(4).forEach(item => {
+    insights.push({ level: 'low', topic: item.icon + ' ' + item.section, recommendation: 'Buen dominio de este tema. Mantener el nivel y profundizar con los casos practicos del bloque.' });
+  });
+  return insights;
+}
+
+function buildDetailedFeedbackHTML() {
+  let html = '<div style="margin-top:40px;border-top:3px solid #007AFF;padding-top:30px">';
+  html += '<h2 style="font-size:20px;font-weight:700;color:#007AFF;margin-bottom:6px">Retroalimentacion Detallada por Pregunta</h2>';
+  html += '<p style="font-size:12px;color:#666;margin-bottom:24px">Para cada pregunta: tu respuesta, la respuesta correcta y la justificacion de todas las opciones.</p>';
+
+  ACTIVE_SECTIONS.forEach((sec, si) => {
+    html += '<div style="margin-bottom:28px">';
+    html += '<div style="background:#007AFF;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;margin-bottom:14px">' + sec.icon + ' ' + sec.title + '</div>';
+
+    sec.questions.forEach((q, qi) => {
+      const ans = state.answers[si][qi];
+      let isCorrect = false;
+      if (sec.type === 'multiselect') {
+        const ansSet = new Set(ans);
+        const corrSet = new Set(q.correct);
+        isCorrect = ansSet.size === corrSet.size && [...corrSet].every(c => ansSet.has(c));
+      } else {
+        isCorrect = ans === q.correct;
+      }
+
+      const bc = isCorrect ? '#34C759' : '#FF3B30';
+      const bg = isCorrect ? '#F0FFF4' : '#FFF5F5';
+      html += '<div style="border:1px solid #e5e5ea;border-left:5px solid ' + bc + ';border-radius:10px;padding:14px;margin-bottom:12px;background:' + bg + ';page-break-inside:avoid">';
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      html += '<span style="background:#007AFF;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0">' + (qi+1) + '</span>';
+      html += '<span style="font-weight:700;font-size:12px;color:' + (isCorrect?'#1A7A34':'#C0392B') + '">' + (isCorrect?'CORRECTA':'INCORRECTA') + '</span>';
+      html += '</div>';
+
+      if (sec.type === 'dragdrop') {
+        html += '<p style="font-size:12px;color:#333;margin-bottom:10px;line-height:1.6"><strong>Enunciado:</strong> ' + q.before + '[___]' + q.after + '</p>';
+      } else {
+        html += '<p style="font-size:12px;color:#333;margin-bottom:10px;line-height:1.6;font-weight:600">' + q.text + '</p>';
+      }
+
+      html += '<div style="margin-bottom:10px">';
+      if (sec.type === 'multiple') {
+        q.opts.forEach((opt, oi) => {
+          const isMine = ans === oi, isRight = oi === q.correct;
+          let ob='#f5f5f5',obb='#ddd',olc='#888',ol='';
+          if(isMine&&isRight){ob='#E8F8EE';obb='#34C759';olc='#1A7A34';ol='Tu respuesta — CORRECTA';}
+          else if(isMine&&!isRight){ob='#FFF0EE';obb='#FF3B30';olc='#C0392B';ol='Tu respuesta — INCORRECTA';}
+          else if(!isMine&&isRight){ob='#FFF5E6';obb='#FF9500';olc='#c07000';ol='Respuesta correcta (no seleccionada)';}
+          html += '<div style="background:'+ob+';border:1px solid '+obb+';border-radius:6px;padding:7px 10px;margin-bottom:5px">';
+          if(ol) html += '<div style="font-size:10px;font-weight:700;color:'+olc+';margin-bottom:2px">'+ol+'</div>';
+          html += '<div style="font-size:11px;color:#333">'+opt+'</div></div>';
+        });
+      } else if (sec.type === 'multiselect') {
+        const cs = new Set(q.correct);
+        q.opts.forEach((opt, oi) => {
+          const isSel=(ans||[]).includes(oi), isRight=cs.has(oi);
+          let ob='#f9f9f9',obb='#e5e5ea',olc='#aaa',ol='';
+          if(isSel&&isRight){ob='#E8F8EE';obb='#34C759';olc='#1A7A34';ol='Seleccionada — CORRECTA';}
+          if(isSel&&!isRight){ob='#FFF0EE';obb='#FF3B30';olc='#C0392B';ol='Seleccionada — INCORRECTA (no debia marcarse)';}
+          if(!isSel&&isRight){ob='#FFF5E6';obb='#FF9500';olc='#c07000';ol='No seleccionada — DEBIA MARCARSE';}
+          if(!isSel&&!isRight){ol='No seleccionada — correcto omitirla';}
+          html += '<div style="background:'+ob+';border:1px solid '+obb+';border-radius:6px;padding:7px 10px;margin-bottom:5px">';
+          if(ol) html += '<div style="font-size:10px;font-weight:700;color:'+olc+';margin-bottom:2px">'+ol+'</div>';
+          html += '<div style="font-size:11px;color:#333">'+opt+'</div></div>';
+        });
+      } else if (sec.type === 'truefalse') {
+        [{val:true,lbl:'Verdadero'},{val:false,lbl:'Falso'}].forEach(ch => {
+          const isMine=ans===ch.val, isRight=q.correct===ch.val;
+          let ob='#f5f5f5',obb='#ddd',olc='#888',ol='';
+          if(isMine&&isRight){ob='#E8F8EE';obb='#34C759';olc='#1A7A34';ol='Tu respuesta — CORRECTA';}
+          else if(isMine&&!isRight){ob='#FFF0EE';obb='#FF3B30';olc='#C0392B';ol='Tu respuesta — INCORRECTA';}
+          else if(!isMine&&isRight){ob='#FFF5E6';obb='#FF9500';olc='#c07000';ol='Respuesta correcta';}
+          html += '<div style="background:'+ob+';border:1px solid '+obb+';border-radius:6px;padding:7px 10px;margin-bottom:5px">';
+          if(ol) html += '<div style="font-size:10px;font-weight:700;color:'+olc+';margin-bottom:2px">'+ol+'</div>';
+          html += '<div style="font-size:11px;color:#333">'+ch.lbl+'</div></div>';
+        });
+      } else if (sec.type === 'dragdrop') {
+        const sa=ans||'(sin respuesta)', ok=ans===q.correct;
+        html += '<div style="background:'+(ok?'#E8F8EE':'#FFF0EE')+';border:1px solid '+(ok?'#34C759':'#FF3B30')+';border-radius:6px;padding:7px 10px;margin-bottom:5px">';
+        html += '<div style="font-size:10px;font-weight:700;color:'+(ok?'#1A7A34':'#C0392B')+';margin-bottom:2px">'+(ok?'Tu respuesta — CORRECTA':'Tu respuesta — INCORRECTA')+'</div>';
+        html += '<div style="font-size:11px;color:#333">Respondiste: <strong>'+sa+'</strong></div></div>';
+        if(!ok){
+          html += '<div style="background:#FFF5E6;border:1px solid #FF9500;border-radius:6px;padding:7px 10px;margin-bottom:5px">';
+          html += '<div style="font-size:10px;font-weight:700;color:#c07000;margin-bottom:2px">Respuesta correcta</div>';
+          html += '<div style="font-size:11px;color:#333"><strong>'+q.correct+'</strong></div></div>';
+        }
+      }
+      html += '</div>';
+      html += '<div style="background:#F0F4FF;border-left:4px solid #007AFF;border-radius:0 8px 8px 0;padding:10px 12px;font-size:11px;color:#333;line-height:1.7">';
+      html += '<strong style="color:#007AFF">Retroalimentacion:</strong> ' + q.just;
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function downloadPDF() {
+  const correctBySection = ACTIVE_SECTIONS.map((sec, si) => {
+    const c = sec.questions.filter((q, qi) => {
+      const ans = state.answers[si][qi];
+      if (sec.type === 'multiselect') {
+        const ansSet = new Set(ans); const corrSet = new Set(q.correct);
+        return ansSet.size === corrSet.size && [...corrSet].every(c => ansSet.has(c));
+      } else { return ans === q.correct; }
+    }).length;
+    return Math.round((c / sec.questions.length) * 100);
+  });
+
+  const scoreNum = document.getElementById('score-num').textContent;
+  const scoreLabel = document.getElementById('score-label').textContent;
+  const insightsData = generateInsights(ACTIVE_SECTIONS, state.answers);
+
+  let html = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Retroalimentacion Valoracion 2 INV-0170</title>';
+  html += '<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:24px;background:#f5f5f5;color:#333;margin:0}';
+  html += '.w{max-width:920px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 10px rgba(0,0,0,.1)}';
+  html += '.hd{text-align:center;margin-bottom:24px;border-bottom:3px solid #007AFF;padding-bottom:18px}';
+  html += '.hd h1{margin:0 0 6px;color:#1a1a1a;font-size:24px}.hd .sub{color:#007AFF;font-size:15px;font-weight:700}.hd .auth{color:#666;font-size:12px;margin-top:4px}';
+  html += '.ig{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}';
+  html += '.ib{padding:11px 14px;background:#f9f9fb;border-radius:8px;border-left:3px solid #007AFF}';
+  html += '.ib b{color:#007AFF;display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}';
+  html += '.ib span{font-size:13px;font-weight:600;color:#1a1a1a}';
+  html += '.sc{text-align:center;margin:22px 0;padding:22px;background:linear-gradient(135deg,#007AFF,#005ACC);border-radius:14px;color:#fff}';
+  html += '.sn{font-size:50px;font-weight:900;margin:6px 0;line-height:1}.sl{font-size:14px;font-weight:600;opacity:.9}';
+  html += '.st{font-size:16px;font-weight:700;color:#333;margin:22px 0 10px;padding-bottom:5px;border-bottom:2px solid #E5E5EA}';
+  html += '.cb{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:14px 0}';
+  html += '.bi{display:flex;flex-direction:column;align-items:center}';
+  html += '.ba{width:100%;height:90px;background:#E5E5EA;border-radius:5px 5px 0 0;position:relative}';
+  html += '.bf{background:linear-gradient(180deg,#007AFF,#004D99);width:100%;border-radius:5px 5px 0 0;position:absolute;bottom:0;left:0}';
+  html += '.bp{position:absolute;bottom:5px;width:100%;text-align:center;color:#1a1a1a;font-weight:700;font-size:10px}';
+  html += '.bl{font-size:9px;margin-top:5px;text-align:center;line-height:1.3;color:#333}';
+  html += '.ig2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}';
+  html += '.ins{padding:10px;border-left:4px solid;border-radius:5px}';
+  html += '.ins.high{border-color:#FF3B30;background:#FFF0EE}.ins.medium{border-color:#FF9500;background:#FFF5E6}.ins.low{border-color:#34C759;background:#E8F8EE}';
+  html += '.it{font-weight:700;font-size:11px;margin-bottom:3px}';
+  html += '.ins.high .it{color:#C0392B}.ins.medium .it{color:#C67000}.ins.low .it{color:#1A7A34}';
+  html += '.ix{font-size:10px;line-height:1.4}';
+  html += '.ins.high .ix{color:#6D2826}.ins.medium .ix{color:#6B3F00}.ins.low .ix{color:#0D5722}';
+  html += '.ft{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #E5E5EA;font-size:11px;color:#888}';
+  html += '@media print{body{background:#fff;padding:8px}.w{box-shadow:none;padding:16px}}</style>';
+  html += '</head><body onload="setTimeout(function(){window.print();},800);"><div class="w">';
+  html += '<div class="hd"><h1>Retroalimentacion &mdash; Primer Parcial</h1><div class="sub">Inteligencia de Negocios &middot; UPDS 2026</div><div class="auth">M.Sc. Jimmy Nataniel Requena Llorentty</div></div>';
+  html += '<div class="ig"><div class="ib"><b>Estudiante</b><span>'+state.student.nombre+'</span></div>';
+  html += '<div class="ib"><b>Codigo</b><span>'+state.student.codigo+'</span></div>';
+  html += '<div class="ib"><b>Correo</b><span>'+state.student.email+'</span></div>';
+  html += '<div class="ib"><b>Fecha</b><span>'+new Date().toLocaleString('es-BO',{dateStyle:'long',timeStyle:'short'})+'</span></div></div>';
+  const gradeNum = (parseInt(scoreNum) / 30 * 20).toFixed(2);
+  html += '<div class="sc"><div class="sl">Resultado Final</div><div class="sn">'+gradeNum+' / 20 pts</div><div class="sl" style="font-size:13px;margin-top:4px">'+scoreNum+' de 30 preguntas correctas</div><div class="sl" style="font-size:15px;margin-top:5px">'+scoreLabel+'</div></div>';
+  html += '<div class="st">Desempeno por Seccion</div><div class="cb">';
+  correctBySection.forEach((pct, i) => {
+    const h = Math.max(pct, 3);
+    html += '<div class="bi"><div class="ba"><div class="bf" style="height:'+h+'%"></div><span class="bp">'+pct+'%</span></div>';
+    html += '<div class="bl">'+ACTIVE_SECTIONS[i].icon+'<br>'+ACTIVE_SECTIONS[i].title.split(' ').slice(0,2).join(' ')+'</div></div>';
+  });
+  html += '</div>';
+  html += '<div class="st">Analisis de Resultados</div><div class="ig2">';
+  insightsData.forEach(ins => {
+    html += '<div class="ins '+ins.level+'"><div class="it">'+ins.topic+'</div><div class="ix">'+ins.recommendation+'</div></div>';
+  });
+  html += '</div>';
+  html += buildDetailedFeedbackHTML();
+  html += '<div class="ft"><p>Documento generado automaticamente al entregar la evaluacion.</p>';
+  html += '<p>M.Sc. Jimmy Nataniel Requena Llorentty &mdash; Inteligencia de Negocios &mdash; UPDS 2026</p></div>';
+  html += '</div></body></html>';
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'Retroalimentacion-PrimerParcial-' + state.student.codigo + '.html';
+  link.click();
+}
+</script>
+
+</body>
+</html>
